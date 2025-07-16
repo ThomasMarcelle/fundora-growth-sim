@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Calculator, TrendingUp, PieChart, BarChart3 } from 'lucide-react';
-import fundoraLogo from '@/assets/fundora-logo.png';
+import fundoraLogo from '@/assets/fundora-logo-real.png';
 
 interface SimulationData {
   souscription: number;
@@ -138,14 +138,12 @@ export default function InvestmentSimulator() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-foreground rounded-lg flex items-center justify-center">
-              <span className="text-2xl font-bold text-background">f</span>
-            </div>
+            <img src={fundoraLogo} alt="Fundora" className="w-16 h-16" />
             <h1 className="text-4xl font-bold text-foreground">Fundora</h1>
           </div>
-          <h2 className="text-2xl font-semibold text-foreground mb-2">Simulateur d'Investissement</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-2">Simulateur d'Investissement LBO</h2>
           <p className="text-muted-foreground text-lg">
-            Les fonds de private equity accessibles dès 100€
+            Simulez vos investissements en Leveraged Buy-Out
           </p>
         </div>
 
