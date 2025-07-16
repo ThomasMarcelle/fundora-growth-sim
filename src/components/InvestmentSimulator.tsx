@@ -8,10 +8,7 @@ import fundoraLogo from '@/assets/fundora-logo.png';
 
 interface SimulationData {
   souscription: number;
-  montantAppelAnnuel: number;
   nombreAnnees: number;
-  anneeDebutDistribution: number;
-  nombreAnneesDistribution: number;
   multipleBaseCible: number;
   tauxReinvestissement: number;
 }
@@ -29,10 +26,7 @@ interface YearlyData {
 export default function InvestmentSimulator() {
   const [data, setData] = useState<SimulationData>({
     souscription: 100000,
-    montantAppelAnnuel: 20000,
     nombreAnnees: 5,
-    anneeDebutDistribution: 3,
-    nombreAnneesDistribution: 4,
     multipleBaseCible: 2.5,
     tauxReinvestissement: 0.15
   });
@@ -49,6 +43,19 @@ export default function InvestmentSimulator() {
     const years: YearlyData[] = [];
     let cumulativeCapitalCall = 0;
     let cumulativeDistribution = 0;
+    
+    // Montant appelé chaque année = Souscription / nombre d'années d'appel
+    const montantAppelAnnuel = data.souscription / data.nombreAnnees;
+    
+    // Valeur totale à distribuer selon le MOIC
+    const valeurTotaleDistribution = data.souscription * data.multipleBaseCible;
+    
+    // Capital à rendre (années 3-6)
+    const capitalARendreParAnnee = data.souscription / 4; // 4 années (3,4,5,6)
+    
+    // Profit à distribuer (années 7-10)
+    const profitTotal = valeurTotaleDistribution - data.souscription;
+    const profitParAnnee = profitTotal / 4; // 4 années (7,8,9,10)
 
     // Calcul pour chaque année (0 à 10)
     for (let i = 0; i <= 10; i++) {
@@ -64,15 +71,19 @@ export default function InvestmentSimulator() {
 
       // Capital call pendant les années d'appel
       if (i > 0 && i <= data.nombreAnnees) {
-        year.capitalCall = -data.montantAppelAnnuel;
-        cumulativeCapitalCall += data.montantAppelAnnuel;
+        year.capitalCall = -montantAppelAnnuel;
+        cumulativeCapitalCall += montantAppelAnnuel;
       }
 
-      // Distributions pendant les années de distribution
-      if (i >= data.anneeDebutDistribution && i < data.anneeDebutDistribution + data.nombreAnneesDistribution) {
-        const distributionAnnuelle = (data.souscription * data.multipleBaseCible) / data.nombreAnneesDistribution;
-        year.distribution = distributionAnnuelle;
-        cumulativeDistribution += distributionAnnuelle;
+      // Distributions : Capital rendu années 3-6, puis profit années 7-10
+      if (i >= 3 && i <= 6) {
+        // Remboursement du capital
+        year.distribution = capitalARendreParAnnee;
+        cumulativeDistribution += capitalARendreParAnnee;
+      } else if (i >= 7 && i <= 10) {
+        // Distribution du profit
+        year.distribution = profitParAnnee;
+        cumulativeDistribution += profitParAnnee;
       }
 
       // Montant réel décaissé
@@ -127,11 +138,13 @@ export default function InvestmentSimulator() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-4 mb-6">
-            <img src={fundoraLogo} alt="Fundora" className="w-12 h-12" />
-            <h1 className="text-4xl font-bold text-white">Fundora</h1>
+            <div className="w-12 h-12 bg-foreground rounded-lg flex items-center justify-center">
+              <span className="text-2xl font-bold text-background">f</span>
+            </div>
+            <h1 className="text-4xl font-bold text-foreground">Fundora</h1>
           </div>
-          <h2 className="text-2xl font-semibold text-white mb-2">Simulateur d'Investissement</h2>
-          <p className="text-primary-foreground/80 text-lg">
+          <h2 className="text-2xl font-semibold text-foreground mb-2">Simulateur d'Investissement</h2>
+          <p className="text-muted-foreground text-lg">
             Les fonds de private equity accessibles dès 100€
           </p>
         </div>
@@ -157,16 +170,9 @@ export default function InvestmentSimulator() {
                   value={data.souscription}
                   onChange={(e) => handleInputChange('souscription', Number(e.target.value))}
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="montantAppel">Montant appelé chaque année (€)</Label>
-                <Input
-                  id="montantAppel"
-                  type="number"
-                  value={data.montantAppelAnnuel}
-                  onChange={(e) => handleInputChange('montantAppelAnnuel', Number(e.target.value))}
-                />
+                <p className="text-sm text-muted-foreground">
+                  Montant appelé/an : {(data.souscription / data.nombreAnnees).toLocaleString('fr-FR')} €
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -180,27 +186,7 @@ export default function InvestmentSimulator() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="anneeDebut">Année de début des distributions</Label>
-                <Input
-                  id="anneeDebut"
-                  type="number"
-                  value={data.anneeDebutDistribution}
-                  onChange={(e) => handleInputChange('anneeDebutDistribution', Number(e.target.value))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="anneesDistrib">Nombre d'années de distributions</Label>
-                <Input
-                  id="anneesDistrib"
-                  type="number"
-                  value={data.nombreAnneesDistribution}
-                  onChange={(e) => handleInputChange('nombreAnneesDistribution', Number(e.target.value))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="multiple">Multiple base cible</Label>
+                <Label htmlFor="multiple">Multiple base cible (MOIC)</Label>
                 <Input
                   id="multiple"
                   type="number"
@@ -208,6 +194,9 @@ export default function InvestmentSimulator() {
                   value={data.multipleBaseCible}
                   onChange={(e) => handleInputChange('multipleBaseCible', Number(e.target.value))}
                 />
+                <p className="text-sm text-muted-foreground">
+                  Valeur totale : {(data.souscription * data.multipleBaseCible).toLocaleString('fr-FR')} €
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -219,6 +208,15 @@ export default function InvestmentSimulator() {
                   value={data.tauxReinvestissement * 100}
                   onChange={(e) => handleInputChange('tauxReinvestissement', Number(e.target.value) / 100)}
                 />
+              </div>
+
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-medium mb-2">Calendrier des distributions</h4>
+                <div className="text-sm space-y-1">
+                  <div>• Années 1-{data.nombreAnnees} : Appels de {(data.souscription / data.nombreAnnees).toLocaleString('fr-FR')} €</div>
+                  <div>• Années 3-6 : Remboursement capital ({(data.souscription / 4).toLocaleString('fr-FR')} €/an)</div>
+                  <div>• Années 7-10 : Distribution profit ({((data.souscription * data.multipleBaseCible - data.souscription) / 4).toLocaleString('fr-FR')} €/an)</div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -306,16 +304,18 @@ export default function InvestmentSimulator() {
                     </thead>
                     <tbody>
                       {results.map((year, index) => (
-                        <tr key={index} className="border-b hover:bg-muted/50">
+                        <tr key={index} className="border-b border-border hover:bg-muted/50">
                           <td className="p-2 font-medium">{year.annee}</td>
-                          <td className="text-right p-2 text-destructive">
+                          <td className="text-right p-2 text-red-400">
                             {year.capitalCall < 0 ? `${year.capitalCall.toLocaleString('fr-FR')} €` : '-'}
                           </td>
-                          <td className="text-right p-2 text-green-600">
+                          <td className="text-right p-2 text-green-400">
                             {year.distribution > 0 ? `${year.distribution.toLocaleString('fr-FR')} €` : '-'}
                           </td>
                           <td className="text-right p-2">
-                            {year.montantRealDecaisse.toLocaleString('fr-FR')} €
+                            <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
+                              {year.montantRealDecaisse.toLocaleString('fr-FR')} €
+                            </span>
                           </td>
                           <td className="text-right p-2 text-primary">
                             {year.valeurFuture > 0 ? `${year.valeurFuture.toLocaleString('fr-FR')} €` : '-'}
