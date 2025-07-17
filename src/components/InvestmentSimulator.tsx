@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Calculator, TrendingUp, PieChart, BarChart3 } from 'lucide-react';
-import fundoraLogo from '@/assets/fundora-logo-real.png';
+import fundoraLogo from '@/assets/fundora-logo-official.png';
 
 interface SimulationData {
   souscription: number;
@@ -17,9 +17,9 @@ interface YearlyData {
   annee: number;
   capitalCall: number;
   distribution: number;
+  distributionRecyclee: number;
   montantRealDecaisse: number;
-  distributionAppelePondere: number;
-  montantAppeleFonds: number;
+  fluxNet: number;
   valeurFuture: number;
 }
 
@@ -34,6 +34,7 @@ export default function InvestmentSimulator() {
   const [results, setResults] = useState<YearlyData[]>([]);
   const [finalResults, setFinalResults] = useState({
     capitalTotalRealInvesti: 0,
+    capitalRealInvesti: 0,
     valeurFinaleReinvestie: 0,
     moic: 0,
     triAnnuel: 0
@@ -41,8 +42,8 @@ export default function InvestmentSimulator() {
 
   const calculateSimulation = () => {
     const years: YearlyData[] = [];
-    let cumulativeCapitalCall = 0;
-    let cumulativeDistribution = 0;
+    let totalCapitalCalled = 0;
+    let totalActualCashOut = 0;
     
     // Montant appelé chaque année = Souscription / nombre d'années d'appel
     const montantAppelAnnuel = data.souscription / data.nombreAnnees;
@@ -63,58 +64,72 @@ export default function InvestmentSimulator() {
         annee: i,
         capitalCall: 0,
         distribution: 0,
+        distributionRecyclee: 0,
         montantRealDecaisse: 0,
-        distributionAppelePondere: 0,
-        montantAppeleFonds: 0,
+        fluxNet: 0,
         valeurFuture: 0
       };
 
       // Capital call pendant les années d'appel
       if (i > 0 && i <= data.nombreAnnees) {
         year.capitalCall = -montantAppelAnnuel;
-        cumulativeCapitalCall += montantAppelAnnuel;
       }
 
       // Distributions : Capital rendu années 3-6, puis profit années 7-10
       if (i >= 3 && i <= 6) {
         // Remboursement du capital
         year.distribution = capitalARendreParAnnee;
-        cumulativeDistribution += capitalARendreParAnnee;
       } else if (i >= 7 && i <= 10) {
         // Distribution du profit
         year.distribution = profitParAnnee;
-        cumulativeDistribution += profitParAnnee;
       }
 
-      // Montant réel décaissé
-      year.montantRealDecaisse = year.capitalCall + year.distribution;
+      // Calcul du commitment restant avant cette année
+      const capitalDejaAppele = years.slice(0, i).reduce((sum, prevYear) => {
+        return sum + Math.abs(prevYear.capitalCall) + prevYear.distributionRecyclee;
+      }, 0);
+      
+      const commitmentRestant = Math.max(0, data.souscription - capitalDejaAppele);
 
-      // Distribution appelée pondérée par le fonds
-      year.distributionAppelePondere = year.distribution;
+      // Distribution recyclée (utilisée pour financer le commitment)
+      if (year.distribution > 0 && commitmentRestant > 0) {
+        const capitalCallCetteAnnee = Math.abs(year.capitalCall);
+        const recyclageNecessaire = Math.min(year.distribution, 
+          Math.min(capitalCallCetteAnnee, commitmentRestant));
+        year.distributionRecyclee = recyclageNecessaire;
+      }
 
-      // Montant appelé par le fonds à la place du capital
-      year.montantAppeleFonds = year.capitalCall ? Math.abs(year.capitalCall) : 0;
+      // Montant réel décaissé (cash effectivement sorti de poche)
+      year.montantRealDecaisse = year.capitalCall + year.distributionRecyclee;
 
-      // Valeur future (réinvestissement)
-      if (year.distribution > 0) {
+      // Flux net (pour calcul TRI)
+      year.fluxNet = year.distribution - year.distributionRecyclee + year.capitalCall;
+
+      // Valeur future (réinvestissement des distributions nettes)
+      const distributionNette = year.distribution - year.distributionRecyclee;
+      if (distributionNette > 0) {
         const anneesRestantes = 10 - i;
-        year.valeurFuture = year.distribution * Math.pow(1 + data.tauxReinvestissement, anneesRestantes);
+        year.valeurFuture = distributionNette * Math.pow(1 + data.tauxReinvestissement, anneesRestantes);
       }
+
+      totalCapitalCalled += Math.abs(year.capitalCall);
+      totalActualCashOut += Math.abs(year.montantRealDecaisse);
 
       years.push(year);
     }
 
     // Calcul des résultats finaux
-    const capitalTotalRealInvesti = cumulativeCapitalCall;
+    const capitalRealInvesti = totalActualCashOut;
     const valeurFinaleReinvestie = years.reduce((sum, year) => sum + year.valeurFuture, 0);
-    const moic = valeurFinaleReinvestie / capitalTotalRealInvesti;
+    const moic = valeurFinaleReinvestie / capitalRealInvesti;
     
     // Calcul du TRI (approximation)
     const triAnnuel = Math.pow(moic, 1/10) - 1;
 
     setResults(years);
     setFinalResults({
-      capitalTotalRealInvesti,
+      capitalTotalRealInvesti: totalCapitalCalled,
+      capitalRealInvesti,
       valeurFinaleReinvestie,
       moic,
       triAnnuel
@@ -222,18 +237,21 @@ export default function InvestmentSimulator() {
           {/* Résultats */}
           <div className="lg:col-span-2 space-y-8">
             {/* Résultats clés */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               <Card className="shadow-fundora">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="w-5 h-5" />
-                    Capital investi
+                    Capital réel investi
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-primary">
-                    {finalResults.capitalTotalRealInvesti.toLocaleString('fr-FR')} €
+                    {finalResults.capitalRealInvesti.toLocaleString('fr-FR')} €
                   </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Cash effectivement sorti de poche
+                  </p>
                 </CardContent>
               </Card>
 
@@ -296,7 +314,8 @@ export default function InvestmentSimulator() {
                         <th className="text-left p-2">Année</th>
                         <th className="text-right p-2">Capital Call</th>
                         <th className="text-right p-2">Distribution</th>
-                        <th className="text-right p-2">Flux Net</th>
+                        <th className="text-right p-2">Distrib. Recyclée</th>
+                        <th className="text-right p-2">Cash Décaissé</th>
                         <th className="text-right p-2">Valeur Future</th>
                       </tr>
                     </thead>
@@ -310,7 +329,10 @@ export default function InvestmentSimulator() {
                           <td className="text-right p-2 text-green-400">
                             {year.distribution > 0 ? `${year.distribution.toLocaleString('fr-FR')} €` : '-'}
                           </td>
-                          <td className="text-right p-2">
+                          <td className="text-right p-2 text-blue-400 italic">
+                            {year.distributionRecyclee > 0 ? `${year.distributionRecyclee.toLocaleString('fr-FR')} €` : '-'}
+                          </td>
+                          <td className="text-right p-2 font-medium">
                             <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
                               {year.montantRealDecaisse.toLocaleString('fr-FR')} €
                             </span>
