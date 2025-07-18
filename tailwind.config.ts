@@ -62,7 +62,12 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Design system colors
+				'da-primary': 'hsl(var(--da-primary))',
+				'da-border': 'hsl(var(--da-border))',
+				'da-text': 'hsl(var(--da-text))',
+				'da-white': 'hsl(var(--da-white))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

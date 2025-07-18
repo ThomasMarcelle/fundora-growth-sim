@@ -149,7 +149,7 @@ export default function InvestmentSimulator() {
 
   return (
     <div className="min-h-screen bg-gradient-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="main-container container mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-4 mb-6">
@@ -164,7 +164,7 @@ export default function InvestmentSimulator() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Paramètres */}
-          <Card className="lg:col-span-1 shadow-fundora">
+          <Card className="lg:col-span-1 box">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calculator className="w-5 h-5" />
@@ -238,7 +238,7 @@ export default function InvestmentSimulator() {
           <div className="lg:col-span-2 space-y-8">
             {/* Résultats clés */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              <Card className="shadow-fundora">
+              <Card className="box">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="w-5 h-5" />
@@ -246,16 +246,16 @@ export default function InvestmentSimulator() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-primary">
+                  <div className="big-number text-2xl font-bold">
                     {finalResults.capitalRealInvesti.toLocaleString('fr-FR')} €
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <p className="text text-sm mt-2">
                     Cash effectivement sorti de poche
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-fundora">
+              <Card className="box">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <PieChart className="w-5 h-5" />
@@ -263,13 +263,13 @@ export default function InvestmentSimulator() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-primary">
+                  <div className="big-number text-2xl font-bold">
                     {finalResults.valeurFinaleReinvestie.toLocaleString('fr-FR')} €
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-fundora">
+              <Card className="box">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="w-5 h-5" />
@@ -277,13 +277,13 @@ export default function InvestmentSimulator() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-primary">
+                  <div className="big-number text-2xl font-bold">
                     {finalResults.moic.toFixed(2)}x
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-fundora">
+              <Card className="box">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="w-5 h-5" />
@@ -291,7 +291,7 @@ export default function InvestmentSimulator() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-primary">
+                  <div className="big-number text-2xl font-bold">
                     {(finalResults.triAnnuel * 100).toFixed(1)}%
                   </div>
                 </CardContent>
@@ -299,7 +299,7 @@ export default function InvestmentSimulator() {
             </div>
 
             {/* Tableau détaillé */}
-            <Card className="shadow-fundora">
+            <Card className="box">
               <CardHeader>
                 <CardTitle>Évolution annuelle</CardTitle>
                 <CardDescription>

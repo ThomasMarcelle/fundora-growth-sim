@@ -8,24 +8,24 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 8%;
-    --foreground: 0 0% 98%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 12%;
 
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 12%;
 
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 12%;
 
     --primary: 250 100% 60%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 270 100% 70%;
 
-    --secondary: 0 0% 16%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 12%;
 
-    --muted: 0 0% 16%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 45%;
 
     --accent: 270 100% 70%;
     --accent-foreground: 0 0% 100%;
@@ -33,13 +33,19 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
+    --border: 0 0% 87%;
+    --input: 0 0% 87%;
     --ring: 250 100% 60%;
 
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
-    --gradient-background: linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 12%));
+    --gradient-background: linear-gradient(135deg, hsl(0 0% 100%), hsl(0 0% 98%));
     --shadow-fundora: 0 10px 40px -10px hsl(var(--primary) / 0.4);
+    
+    /* Design system colors */
+    --da-primary: 250 100% 60%;
+    --da-border: 0 0% 87%;
+    --da-text: 0 0% 12%;
+    --da-white: 0 0% 100%;
 
     --radius: 0.5rem;
 
@@ -61,24 +67,24 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 0 0% 8%;
-    --foreground: 0 0% 98%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 12%;
 
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 12%;
 
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 12%;
 
     --primary: 250 100% 60%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 270 100% 70%;
 
-    --secondary: 0 0% 16%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 12%;
 
-    --muted: 0 0% 16%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 45%;
 
     --accent: 270 100% 70%;
     --accent-foreground: 0 0% 100%;
@@ -86,12 +92,12 @@ All colors MUST be HSL.
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
+    --border: 0 0% 87%;
+    --input: 0 0% 87%;
     --ring: 250 100% 60%;
 
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
-    --gradient-background: linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 12%));
+    --gradient-background: linear-gradient(135deg, hsl(0 0% 100%), hsl(0 0% 98%));
     --shadow-fundora: 0 10px 40px -10px hsl(var(--primary) / 0.4);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -111,5 +117,26 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'AeonikRegular', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'AeonikMedium', sans-serif;
+  }
+  
+  .main-container {
+    @apply p-10 rounded-[13px] border border-da-border;
+  }
+  
+  .box {
+    @apply rounded-[13px] border border-da-border bg-da-white p-6;
+  }
+  
+  .big-number {
+    @apply text-da-primary;
+  }
+  
+  .text {
+    @apply text-da-text;
   }
 }
