@@ -166,12 +166,42 @@ export default function InvestmentSimulator() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="investment-type">Type d'investissement</Label>
-                  <select className="input w-full">
-                    <option value="lbo">LBO</option>
-                    <option value="vc" disabled>VC (à venir)</option>
-                    <option value="secondaire" disabled>Secondaire (à venir)</option>
-                  </select>
+                  <Label>Type d'investissement</Label>
+                  <div className="flex gap-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="lbo"
+                        name="investment-type"
+                        value="lbo"
+                        defaultChecked
+                        className="w-4 h-4 text-primary border-border focus:ring-primary"
+                      />
+                      <Label htmlFor="lbo" className="text-sm">LBO</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="vc"
+                        name="investment-type"
+                        value="vc"
+                        disabled
+                        className="w-4 h-4 text-primary border-border focus:ring-primary opacity-50"
+                      />
+                      <Label htmlFor="vc" className="text-sm opacity-50">VC</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="secondaire"
+                        name="investment-type"
+                        value="secondaire"
+                        disabled
+                        className="w-4 h-4 text-primary border-border focus:ring-primary opacity-50"
+                      />
+                      <Label htmlFor="secondaire" className="text-sm opacity-50">Secondaire</Label>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
