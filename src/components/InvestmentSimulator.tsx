@@ -150,203 +150,109 @@ export default function InvestmentSimulator() {
   return (
     <div className="min-h-screen bg-gradient-background">
       <div className="main-container container mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <img src={fundoraLogo} alt="Fundora" className="w-16 h-16" />
-            <h1 className="text-4xl font-bold text-foreground">Fundora</h1>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Formulaire - Colonne de gauche */}
+          <div className="space-y-6">
+            <div className="box">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="souscription">Souscription (€)</Label>
+                  <Input
+                    id="souscription"
+                    type="number"
+                    value={data.souscription}
+                    onChange={(e) => handleInputChange('souscription', Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="investment-type">Type d'investissement</Label>
+                  <select className="input w-full">
+                    <option value="lbo">LBO</option>
+                    <option value="vc" disabled>VC (à venir)</option>
+                    <option value="secondaire" disabled>Secondaire (à venir)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
-          <h2 className="text-2xl font-semibold text-foreground mb-2">Simulateur d'Investissement LBO</h2>
-          <p className="text-muted-foreground text-lg">
-            Simulez vos investissements en Leveraged Buy-Out
-          </p>
+
+          {/* Résultats - Colonne de droite */}
+          <div className="space-y-6">
+            {/* Résultats clés */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="box">
+                <div className="big-number text-xl font-bold">
+                  {finalResults.capitalRealInvesti.toLocaleString('fr-FR')} €
+                </div>
+                <p className="text text-sm mt-1">Capital réel investi</p>
+              </div>
+
+              <div className="box">
+                <div className="big-number text-xl font-bold">
+                  {finalResults.valeurFinaleReinvestie.toLocaleString('fr-FR')} €
+                </div>
+                <p className="text text-sm mt-1">Valeur finale</p>
+              </div>
+
+              <div className="box">
+                <div className="big-number text-xl font-bold">
+                  {finalResults.moic.toFixed(2)}x
+                </div>
+                <p className="text text-sm mt-1">MOIC</p>
+              </div>
+
+              <div className="box">
+                <div className="big-number text-xl font-bold">
+                  {(finalResults.triAnnuel * 100).toFixed(1)}%
+                </div>
+                <p className="text text-sm mt-1">TRI Annuel</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Paramètres */}
-          <Card className="lg:col-span-1 box">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="w-5 h-5" />
-                Paramètres
-              </CardTitle>
-              <CardDescription>
-                Configurez votre simulation d'investissement
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="souscription">Souscription de l'investisseur (€)</Label>
-                <Input
-                  id="souscription"
-                  type="number"
-                  value={data.souscription}
-                  onChange={(e) => handleInputChange('souscription', Number(e.target.value))}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Montant appelé/an : {(data.souscription / data.nombreAnnees).toLocaleString('fr-FR')} €
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="nombreAnnees">Nombre d'années d'appels</Label>
-                <Input
-                  id="nombreAnnees"
-                  type="number"
-                  value={data.nombreAnnees}
-                  onChange={(e) => handleInputChange('nombreAnnees', Number(e.target.value))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="multiple">Multiple base cible (MOIC)</Label>
-                <Input
-                  id="multiple"
-                  type="number"
-                  step="0.1"
-                  value={data.multipleBaseCible}
-                  onChange={(e) => handleInputChange('multipleBaseCible', Number(e.target.value))}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Valeur totale : {(data.souscription * data.multipleBaseCible).toLocaleString('fr-FR')} €
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="taux">Taux de réinvestissement (%)</Label>
-                <Input
-                  id="taux"
-                  type="number"
-                  step="0.01"
-                  value={data.tauxReinvestissement * 100}
-                  onChange={(e) => handleInputChange('tauxReinvestissement', Number(e.target.value) / 100)}
-                />
-              </div>
-
-              <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2">Calendrier des distributions</h4>
-                <div className="text-sm space-y-1">
-                  <div>• Années 1-{data.nombreAnnees} : Appels de {(data.souscription / data.nombreAnnees).toLocaleString('fr-FR')} €</div>
-                  <div>• Années 3-6 : Remboursement capital ({(data.souscription / 4).toLocaleString('fr-FR')} €/an)</div>
-                  <div>• Années 7-10 : Distribution profit ({((data.souscription * data.multipleBaseCible - data.souscription) / 4).toLocaleString('fr-FR')} €/an)</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Résultats */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Résultats clés */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              <Card className="box">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
-                    Capital réel investi
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="big-number text-2xl font-bold">
-                    {finalResults.capitalRealInvesti.toLocaleString('fr-FR')} €
-                  </div>
-                  <p className="text text-sm mt-2">
-                    Cash effectivement sorti de poche
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="box">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PieChart className="w-5 h-5" />
-                    Valeur finale
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="big-number text-2xl font-bold">
-                    {finalResults.valeurFinaleReinvestie.toLocaleString('fr-FR')} €
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="box">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5" />
-                    MOIC
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="big-number text-2xl font-bold">
-                    {finalResults.moic.toFixed(2)}x
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="box">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
-                    TRI Annuel
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="big-number text-2xl font-bold">
-                    {(finalResults.triAnnuel * 100).toFixed(1)}%
-                  </div>
-                </CardContent>
-              </Card>
+        {/* Tableau en bas */}
+        <div className="mt-8">
+          <div className="box">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Année</th>
+                    <th className="text-right p-2">Capital Call</th>
+                    <th className="text-right p-2">Distribution</th>
+                    <th className="text-right p-2">Distrib. Recyclée</th>
+                    <th className="text-right p-2">Cash Décaissé</th>
+                    <th className="text-right p-2">Valeur Future</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map((year, index) => (
+                    <tr key={index} className="border-b border-border hover:bg-muted/50">
+                      <td className="p-2 font-medium">{year.annee}</td>
+                      <td className="text-right p-2 text-red-400">
+                        {year.capitalCall < 0 ? `${year.capitalCall.toLocaleString('fr-FR')} €` : '-'}
+                      </td>
+                      <td className="text-right p-2 text-green-400">
+                        {year.distribution > 0 ? `${year.distribution.toLocaleString('fr-FR')} €` : '-'}
+                      </td>
+                      <td className="text-right p-2 text-blue-400 italic">
+                        {year.distributionRecyclee > 0 ? `${year.distributionRecyclee.toLocaleString('fr-FR')} €` : '-'}
+                      </td>
+                      <td className="text-right p-2 font-medium">
+                        <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
+                          {year.montantRealDecaisse.toLocaleString('fr-FR')} €
+                        </span>
+                      </td>
+                      <td className="text-right p-2 text-primary">
+                        {year.valeurFuture > 0 ? `${year.valeurFuture.toLocaleString('fr-FR')} €` : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-
-            {/* Tableau détaillé */}
-            <Card className="box">
-              <CardHeader>
-                <CardTitle>Évolution annuelle</CardTitle>
-                <CardDescription>
-                  Détail des flux de trésorerie par année
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Année</th>
-                        <th className="text-right p-2">Capital Call</th>
-                        <th className="text-right p-2">Distribution</th>
-                        <th className="text-right p-2">Distrib. Recyclée</th>
-                        <th className="text-right p-2">Cash Décaissé</th>
-                        <th className="text-right p-2">Valeur Future</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.map((year, index) => (
-                        <tr key={index} className="border-b border-border hover:bg-muted/50">
-                          <td className="p-2 font-medium">{year.annee}</td>
-                          <td className="text-right p-2 text-red-400">
-                            {year.capitalCall < 0 ? `${year.capitalCall.toLocaleString('fr-FR')} €` : '-'}
-                          </td>
-                          <td className="text-right p-2 text-green-400">
-                            {year.distribution > 0 ? `${year.distribution.toLocaleString('fr-FR')} €` : '-'}
-                          </td>
-                          <td className="text-right p-2 text-blue-400 italic">
-                            {year.distributionRecyclee > 0 ? `${year.distributionRecyclee.toLocaleString('fr-FR')} €` : '-'}
-                          </td>
-                          <td className="text-right p-2 font-medium">
-                            <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
-                              {year.montantRealDecaisse.toLocaleString('fr-FR')} €
-                            </span>
-                          </td>
-                          <td className="text-right p-2 text-primary">
-                            {year.valeurFuture > 0 ? `${year.valeurFuture.toLocaleString('fr-FR')} €` : '-'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
