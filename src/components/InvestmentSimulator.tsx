@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Calculator, TrendingUp, PieChart, BarChart3 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Calculator, TrendingUp, PieChart, BarChart3, Info, Recycle, Wallet, Target } from 'lucide-react';
 import fundoraLogo from '@/assets/fundora-logo-official.png';
 
 interface SimulationData {
@@ -148,144 +149,211 @@ export default function InvestmentSimulator() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-background">
-      <div className="main-container container mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Formulaire - Colonne de gauche */}
-          <div className="space-y-6">
-            <div className="box">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="souscription">Souscription (€)</Label>
-                  <Input
-                    id="souscription"
-                    type="number"
-                    value={data.souscription}
-                    onChange={(e) => handleInputChange('souscription', Number(e.target.value))}
-                  />
-                </div>
+    <TooltipProvider>
+      <div className="min-h-screen bg-gradient-background">
+        <div className="main-container container mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Formulaire - Colonne de gauche */}
+            <div className="space-y-6">
+              <div className="box">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="souscription">Souscription (€)</Label>
+                    <Input
+                      id="souscription"
+                      type="number"
+                      value={data.souscription}
+                      onChange={(e) => handleInputChange('souscription', Number(e.target.value))}
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>Type d'investissement</Label>
-                  <div className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="lbo"
-                        name="investment-type"
-                        value="lbo"
-                        defaultChecked
-                        className="w-4 h-4 text-primary border-border focus:ring-primary"
-                      />
-                      <Label htmlFor="lbo" className="text-sm">LBO</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="vc"
-                        name="investment-type"
-                        value="vc"
-                        disabled
-                        className="w-4 h-4 text-primary border-border focus:ring-primary opacity-50"
-                      />
-                      <Label htmlFor="vc" className="text-sm opacity-50">VC</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="secondaire"
-                        name="investment-type"
-                        value="secondaire"
-                        disabled
-                        className="w-4 h-4 text-primary border-border focus:ring-primary opacity-50"
-                      />
-                      <Label htmlFor="secondaire" className="text-sm opacity-50">Secondaire</Label>
+                  <div className="space-y-2">
+                    <Label>Type d'investissement</Label>
+                    <div className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="lbo"
+                          name="investment-type"
+                          value="lbo"
+                          defaultChecked
+                          className="w-4 h-4 text-primary border-border focus:ring-primary"
+                        />
+                        <Label htmlFor="lbo" className="text-sm">LBO</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="vc"
+                          name="investment-type"
+                          value="vc"
+                          disabled
+                          className="w-4 h-4 text-primary border-border focus:ring-primary opacity-50"
+                        />
+                        <Label htmlFor="vc" className="text-sm opacity-50">VC</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="secondaire"
+                          name="investment-type"
+                          value="secondaire"
+                          disabled
+                          className="w-4 h-4 text-primary border-border focus:ring-primary opacity-50"
+                        />
+                        <Label htmlFor="secondaire" className="text-sm opacity-50">Secondaire</Label>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Résultats - Colonne de droite */}
-          <div className="space-y-6">
-            {/* Résultats clés */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="box">
-                <div className="big-number text-xl font-bold">
-                  {finalResults.capitalRealInvesti.toLocaleString('fr-FR')} €
+            {/* Résultats - Colonne de droite */}
+            <div className="space-y-6">
+              {/* Résultats clés */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="box">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Wallet className="w-5 h-5 text-primary" />
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Montant réellement décaissé de votre poche. Grâce au recyclage des distributions, ce montant est inférieur à votre souscription initiale car une partie des distributions retournent dans le fonds.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="big-number text-xl font-bold">
+                    {finalResults.capitalRealInvesti.toLocaleString('fr-FR')} €
+                  </div>
+                  <p className="text text-sm mt-1">Capital réel investi</p>
                 </div>
-                <p className="text text-sm mt-1">Capital réel investi</p>
-              </div>
 
-              <div className="box">
-                <div className="big-number text-xl font-bold">
-                  {finalResults.valeurFinaleReinvestie.toLocaleString('fr-FR')} €
+                <div className="box">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-5 h-5 text-primary" />
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Valeur totale de votre investissement à la fin de la période, incluant le réinvestissement des distributions nettes au taux de 15% annuel.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="big-number text-xl font-bold">
+                    {finalResults.valeurFinaleReinvestie.toLocaleString('fr-FR')} €
+                  </div>
+                  <p className="text text-sm mt-1">Valeur finale</p>
                 </div>
-                <p className="text text-sm mt-1">Valeur finale</p>
-              </div>
 
-              <div className="box">
-                <div className="big-number text-xl font-bold">
-                  {finalResults.moic.toFixed(2)}x
+                <div className="box">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Multiple on Invested Capital : ratio entre la valeur finale et le capital réel investi. Indique combien de fois votre investissement initial a été multiplié.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="big-number text-xl font-bold">
+                    {finalResults.moic.toFixed(2)}x
+                  </div>
+                  <p className="text text-sm mt-1">MOIC</p>
                 </div>
-                <p className="text text-sm mt-1">MOIC</p>
-              </div>
 
-              <div className="box">
-                <div className="big-number text-xl font-bold">
-                  {(finalResults.triAnnuel * 100).toFixed(1)}%
+                <div className="box">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="w-5 h-5 text-primary" />
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Taux de Rendement Interne annualisé de votre investissement sur 10 ans, tenant compte du recyclage des distributions.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="big-number text-xl font-bold">
+                    {(finalResults.triAnnuel * 100).toFixed(1)}%
+                  </div>
+                  <p className="text text-sm mt-1">TRI Annuel</p>
                 </div>
-                <p className="text text-sm mt-1">TRI Annuel</p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Tableau en bas */}
-        <div className="mt-8">
-          <div className="box">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Année</th>
-                    <th className="text-right p-2">Capital Call</th>
-                    <th className="text-right p-2">Distribution</th>
-                    <th className="text-right p-2">Distrib. Recyclée</th>
-                    <th className="text-right p-2">Cash Décaissé</th>
-                    <th className="text-right p-2">Valeur Future</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.map((year, index) => (
-                    <tr key={index} className="border-b border-border hover:bg-muted/50">
-                      <td className="p-2 font-medium">{year.annee}</td>
-                      <td className="text-right p-2 text-red-400">
-                        {year.capitalCall < 0 ? `${year.capitalCall.toLocaleString('fr-FR')} €` : '-'}
-                      </td>
-                      <td className="text-right p-2 text-green-400">
-                        {year.distribution > 0 ? `${year.distribution.toLocaleString('fr-FR')} €` : '-'}
-                      </td>
-                      <td className="text-right p-2 text-blue-400 italic">
-                        {year.distributionRecyclee > 0 ? `${year.distributionRecyclee.toLocaleString('fr-FR')} €` : '-'}
-                      </td>
-                      <td className="text-right p-2 font-medium">
-                        <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
-                          {year.montantRealDecaisse.toLocaleString('fr-FR')} €
-                        </span>
-                      </td>
-                      <td className="text-right p-2 text-primary">
-                        {year.valeurFuture > 0 ? `${year.valeurFuture.toLocaleString('fr-FR')} €` : '-'}
-                      </td>
+          {/* Tableau en bas */}
+          <div className="mt-8">
+            <div className="box">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Année</th>
+                      <th className="text-right p-2 flex items-center justify-end gap-1">
+                        Capital Call
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Montant appelé par le fonds chaque année</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </th>
+                      <th className="text-right p-2">Distribution</th>
+                      <th className="text-right p-2 flex items-center justify-end gap-1">
+                        <Recycle className="w-3 h-3 text-primary" />
+                        Distrib. Recyclée
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>Partie des distributions qui retourne automatiquement dans le fonds pour financer les futurs capital calls, réduisant votre cash réel à décaisser.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </th>
+                      <th className="text-right p-2">Cash Décaissé</th>
+                      <th className="text-right p-2">Valeur Future</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {results.map((year, index) => (
+                      <tr key={index} className="border-b border-border hover:bg-muted/50">
+                        <td className="p-2 font-medium">{year.annee}</td>
+                        <td className="text-right p-2 text-red-400">
+                          {year.capitalCall < 0 ? `${year.capitalCall.toLocaleString('fr-FR')} €` : '-'}
+                        </td>
+                        <td className="text-right p-2 text-green-400">
+                          {year.distribution > 0 ? `${year.distribution.toLocaleString('fr-FR')} €` : '-'}
+                        </td>
+                        <td className="text-right p-2 text-blue-400 italic">
+                          {year.distributionRecyclee > 0 ? `${year.distributionRecyclee.toLocaleString('fr-FR')} €` : '-'}
+                        </td>
+                        <td className="text-right p-2 font-medium">
+                          <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
+                            {year.montantRealDecaisse.toLocaleString('fr-FR')} €
+                          </span>
+                        </td>
+                        <td className="text-right p-2 text-primary">
+                          {year.valeurFuture > 0 ? `${year.valeurFuture.toLocaleString('fr-FR')} €` : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
