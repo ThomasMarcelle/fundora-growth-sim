@@ -213,72 +213,60 @@ export default function InvestmentSimulator() {
             <div className="space-y-6">
               {/* Résultats clés */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="box">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Wallet className="w-5 h-5 text-primary" />
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>Montant réellement décaissé de votre poche. Grâce au recyclage des distributions, ce montant est inférieur à votre souscription initiale car une partie des distributions retournent dans le fonds.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                <div className="box relative">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>Montant réellement décaissé de votre poche. Grâce au recyclage des distributions, ce montant est inférieur à votre souscription initiale car une partie des distributions retournent dans le fonds.</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <div className="big-number text-xl font-bold">
                     {finalResults.capitalRealInvesti.toLocaleString('fr-FR')} €
                   </div>
                   <p className="text text-sm mt-1">Capital réel investi</p>
                 </div>
 
-                <div className="box">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="w-5 h-5 text-primary" />
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>Valeur totale de votre investissement à la fin de la période, incluant le réinvestissement des distributions nettes au taux de 15% annuel.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                <div className="box relative">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>Valeur totale de votre investissement à la fin de la période, incluant le réinvestissement des distributions nettes au taux de 15% annuel.</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <div className="big-number text-xl font-bold">
                     {finalResults.valeurFinaleReinvestie.toLocaleString('fr-FR')} €
                   </div>
                   <p className="text text-sm mt-1">Valeur finale</p>
                 </div>
 
-                <div className="box">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>Multiple on Invested Capital : ratio entre la valeur finale et le capital réel investi. Indique combien de fois votre investissement initial a été multiplié.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                <div className="box relative">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>Multiple on Invested Capital : ratio entre la valeur finale et le capital réel investi. Indique combien de fois votre investissement initial a été multiplié.</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <div className="big-number text-xl font-bold">
                     {finalResults.moic.toFixed(2)}x
                   </div>
                   <p className="text text-sm mt-1">MOIC</p>
                 </div>
 
-                <div className="box">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BarChart3 className="w-5 h-5 text-primary" />
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>Taux de Rendement Interne annualisé de votre investissement sur 10 ans, tenant compte du recyclage des distributions.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                <div className="box relative">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>Taux de Rendement Interne annualisé de votre investissement sur 10 ans, tenant compte du recyclage des distributions.</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <div className="big-number text-xl font-bold">
                     {(finalResults.triAnnuel * 100).toFixed(1)}%
                   </div>
