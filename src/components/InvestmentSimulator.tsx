@@ -12,6 +12,7 @@ interface SimulationData {
   nombreAnnees: number;
   multipleBaseCible: number;
   tauxReinvestissement: number;
+  investmentType: 'lbo' | 'vc' | 'secondaire';
 }
 
 interface YearlyData {
@@ -29,7 +30,8 @@ export default function InvestmentSimulator() {
     souscription: 100000,
     nombreAnnees: 5,
     multipleBaseCible: 2.5,
-    tauxReinvestissement: 0.15
+    tauxReinvestissement: 0.15,
+    investmentType: 'lbo'
   });
 
   const [results, setResults] = useState<YearlyData[]>([]);
@@ -46,18 +48,26 @@ export default function InvestmentSimulator() {
     let totalCapitalCalled = 0;
     let totalActualCashOut = 0;
     
-    // Montant appelé chaque année = Souscription / nombre d'années d'appel
-    const montantAppelAnnuel = data.souscription / data.nombreAnnees;
+    let montantAppelAnnuel: number;
+    let valeurTotaleDistribution: number;
+    let nombreAnneesDistribution: number;
+    let anneeDebutDistribution: number;
     
-    // Valeur totale à distribuer selon le MOIC
-    const valeurTotaleDistribution = data.souscription * data.multipleBaseCible;
+    if (data.investmentType === 'vc') {
+      // VC : MOIC de 4, distributions linéaires à partir de l'année 4, cash décaissé sur 5 ans
+      montantAppelAnnuel = data.souscription / 5; // 5 années d'appel
+      valeurTotaleDistribution = data.souscription * 4; // MOIC de 4
+      anneeDebutDistribution = 4;
+      nombreAnneesDistribution = 7; // de l'année 4 à 10 = 7 années
+    } else {
+      // LBO : paramètres existants
+      montantAppelAnnuel = data.souscription / data.nombreAnnees;
+      valeurTotaleDistribution = data.souscription * data.multipleBaseCible;
+      anneeDebutDistribution = 3;
+      nombreAnneesDistribution = 8; // Capital (années 3-6) + Profit (années 7-10)
+    }
     
-    // Capital à rendre (années 3-6)
-    const capitalARendreParAnnee = data.souscription / 4; // 4 années (3,4,5,6)
-    
-    // Profit à distribuer (années 7-10)
-    const profitTotal = valeurTotaleDistribution - data.souscription;
-    const profitParAnnee = profitTotal / 4; // 4 années (7,8,9,10)
+    const distributionParAnnee = valeurTotaleDistribution / nombreAnneesDistribution;
 
     // Calcul pour chaque année (0 à 10)
     for (let i = 0; i <= 10; i++) {
@@ -71,18 +81,36 @@ export default function InvestmentSimulator() {
         valeurFuture: 0
       };
 
-      // Capital call pendant les années d'appel
-      if (i > 0 && i <= data.nombreAnnees) {
-        year.capitalCall = -montantAppelAnnuel;
+      // Capital call
+      if (data.investmentType === 'vc') {
+        // VC : cash décaissé sur 5 ans
+        if (i > 0 && i <= 5) {
+          year.capitalCall = -montantAppelAnnuel;
+        }
+      } else {
+        // LBO : pendant les années d'appel définies
+        if (i > 0 && i <= data.nombreAnnees) {
+          year.capitalCall = -montantAppelAnnuel;
+        }
       }
 
-      // Distributions : Capital rendu années 3-6, puis profit années 7-10
-      if (i >= 3 && i <= 6) {
-        // Remboursement du capital
-        year.distribution = capitalARendreParAnnee;
-      } else if (i >= 7 && i <= 10) {
-        // Distribution du profit
-        year.distribution = profitParAnnee;
+      // Distributions
+      if (data.investmentType === 'vc') {
+        // VC : distributions linéaires à partir de l'année 4
+        if (i >= 4 && i <= 10) {
+          year.distribution = distributionParAnnee;
+        }
+      } else {
+        // LBO : Capital rendu années 3-6, puis profit années 7-10
+        const capitalARendreParAnnee = data.souscription / 4; // 4 années (3,4,5,6)
+        const profitTotal = valeurTotaleDistribution - data.souscription;
+        const profitParAnnee = profitTotal / 4; // 4 années (7,8,9,10)
+        
+        if (i >= 3 && i <= 6) {
+          year.distribution = capitalARendreParAnnee;
+        } else if (i >= 7 && i <= 10) {
+          year.distribution = profitParAnnee;
+        }
       }
 
       // Calcul du commitment restant avant cette année
@@ -141,10 +169,17 @@ export default function InvestmentSimulator() {
     calculateSimulation();
   }, [data]);
 
-  const handleInputChange = (field: keyof SimulationData, value: number) => {
+  const handleInputChange = (field: keyof SimulationData, value: number | string) => {
     setData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleInvestmentTypeChange = (type: 'lbo' | 'vc' | 'secondaire') => {
+    setData(prev => ({
+      ...prev,
+      investmentType: type
     }));
   };
 
@@ -176,7 +211,8 @@ export default function InvestmentSimulator() {
                           id="lbo"
                           name="investment-type"
                           value="lbo"
-                          defaultChecked
+                          checked={data.investmentType === 'lbo'}
+                          onChange={() => handleInvestmentTypeChange('lbo')}
                           className="w-4 h-4 text-primary border-border focus:ring-primary"
                         />
                         <Label htmlFor="lbo" className="text-sm">LBO</Label>
@@ -187,10 +223,11 @@ export default function InvestmentSimulator() {
                           id="vc"
                           name="investment-type"
                           value="vc"
-                          disabled
-                          className="w-4 h-4 text-primary border-border focus:ring-primary opacity-50"
+                          checked={data.investmentType === 'vc'}
+                          onChange={() => handleInvestmentTypeChange('vc')}
+                          className="w-4 h-4 text-primary border-border focus:ring-primary"
                         />
-                        <Label htmlFor="vc" className="text-sm opacity-50">VC</Label>
+                        <Label htmlFor="vc" className="text-sm">VC</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <input
@@ -296,12 +333,11 @@ export default function InvestmentSimulator() {
                         </Tooltip>
                       </th>
                       <th className="text-right p-2">Distribution</th>
-                      <th className="text-right p-2 flex items-center justify-end gap-1">
-                        <Recycle className="w-3 h-3 text-primary" />
+                      <th className="text-right p-2">
                         Distrib. Recyclée
                         <Tooltip>
                           <TooltipTrigger>
-                            <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                            <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help ml-1" />
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p>Partie des distributions qui retourne automatiquement dans le fonds pour financer les futurs capital calls, réduisant votre cash réel à décaisser.</p>
@@ -309,7 +345,17 @@ export default function InvestmentSimulator() {
                         </Tooltip>
                       </th>
                       <th className="text-right p-2">Cash Décaissé</th>
-                      <th className="text-right p-2">Valeur Future</th>
+                      <th className="text-right p-2">
+                        Valeur Future
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help ml-1" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>Valeur de la distribution nette réinvestie à 15% annuel jusqu'à l'année 10. Représente la croissance de votre cash libre grâce au réinvestissement.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
