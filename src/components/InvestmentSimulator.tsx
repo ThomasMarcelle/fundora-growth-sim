@@ -54,11 +54,11 @@ export default function InvestmentSimulator() {
     let anneeDebutDistribution: number;
     
     if (data.investmentType === 'vc') {
-      // VC : MOIC de 4, distributions linéaires à partir de l'année 4, cash décaissé sur 5 ans
+      // VC : MOIC de 4, distributions linéaires croissantes à partir de l'année 5, cash décaissé sur 5 ans
       montantAppelAnnuel = data.souscription / 5; // 5 années d'appel
       valeurTotaleDistribution = data.souscription * 4; // MOIC de 4
-      anneeDebutDistribution = 4;
-      nombreAnneesDistribution = 7; // de l'année 4 à 10 = 7 années
+      anneeDebutDistribution = 5;
+      nombreAnneesDistribution = 6; // de l'année 5 à 10 = 6 années
     } else {
       // LBO : paramètres existants
       montantAppelAnnuel = data.souscription / data.nombreAnnees;
@@ -96,9 +96,12 @@ export default function InvestmentSimulator() {
 
       // Distributions
       if (data.investmentType === 'vc') {
-        // VC : distributions linéaires à partir de l'année 4
-        if (i >= 4 && i <= 10) {
-          year.distribution = distributionParAnnee;
+        // VC : distributions linéaires croissantes à partir de l'année 5
+        if (i >= 5 && i <= 10) {
+          // Progression linéaire croissante : distribution augmente chaque année
+          const facteurCroissance = (i - 5 + 1) / nombreAnneesDistribution; // de 1/6 à 6/6
+          const baseDistribution = valeurTotaleDistribution / nombreAnneesDistribution;
+          year.distribution = baseDistribution * (0.5 + 1.5 * facteurCroissance); // Distribution croissante de 50% à 150% de la base
         }
       } else {
         // LBO : Capital rendu années 3-6, puis profit années 7-10
