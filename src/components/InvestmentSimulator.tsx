@@ -210,10 +210,10 @@ export default function InvestmentSimulator() {
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-background">
         <div className="main-container container mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-fit">
             {/* Formulaire - Colonne de gauche */}
-            <div className="space-y-6">
-              <div className="box">
+            <div className="space-y-6 h-fit">
+              <div className="box h-fit">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="souscription">Souscription (€)</Label>
@@ -271,7 +271,7 @@ export default function InvestmentSimulator() {
             </div>
 
             {/* Résultats - Colonne de droite */}
-            <div className="space-y-6">
+            <div className="space-y-6 h-fit">
               {/* Résultats clés */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="box relative">
