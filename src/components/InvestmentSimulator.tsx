@@ -59,6 +59,12 @@ export default function InvestmentSimulator() {
       valeurTotaleDistribution = data.souscription * 4; // MOIC de 4
       anneeDebutDistribution = 5;
       nombreAnneesDistribution = 6; // de l'année 5 à 10 = 6 années
+    } else if (data.investmentType === 'secondaire') {
+      // Secondaire : 6 ans, MOIC de 2.2, distributions à partir de l'année 2
+      montantAppelAnnuel = data.souscription / 6; // 6 années d'appel
+      valeurTotaleDistribution = data.souscription * 2.2; // MOIC de 2.2
+      anneeDebutDistribution = 2;
+      nombreAnneesDistribution = 9; // de l'année 2 à 10 = 9 années
     } else {
       // LBO : paramètres existants
       montantAppelAnnuel = data.souscription / data.nombreAnnees;
@@ -87,6 +93,11 @@ export default function InvestmentSimulator() {
         if (i > 0 && i <= 5) {
           year.capitalCall = -montantAppelAnnuel;
         }
+      } else if (data.investmentType === 'secondaire') {
+        // Secondaire : cash décaissé sur 6 ans
+        if (i > 0 && i <= 6) {
+          year.capitalCall = -montantAppelAnnuel;
+        }
       } else {
         // LBO : pendant les années d'appel définies
         if (i > 0 && i <= data.nombreAnnees) {
@@ -102,6 +113,11 @@ export default function InvestmentSimulator() {
           const facteurCroissance = (i - 5 + 1) / nombreAnneesDistribution; // de 1/6 à 6/6
           const baseDistribution = valeurTotaleDistribution / nombreAnneesDistribution;
           year.distribution = baseDistribution * (0.5 + 1.5 * facteurCroissance); // Distribution croissante de 50% à 150% de la base
+        }
+      } else if (data.investmentType === 'secondaire') {
+        // Secondaire : distributions égales à partir de l'année 2
+        if (i >= 2 && i <= 10) {
+          year.distribution = distributionParAnnee;
         }
       } else {
         // LBO : Capital rendu années 3-6, puis profit années 7-10
@@ -242,10 +258,11 @@ export default function InvestmentSimulator() {
                           id="secondaire"
                           name="investment-type"
                           value="secondaire"
-                          disabled
-                          className="w-4 h-4 text-primary border-border focus:ring-primary opacity-50"
+                          checked={data.investmentType === 'secondaire'}
+                          onChange={() => handleInvestmentTypeChange('secondaire')}
+                          className="w-4 h-4 text-primary border-border focus:ring-primary"
                         />
-                        <Label htmlFor="secondaire" className="text-sm opacity-50">Secondaire</Label>
+                        <Label htmlFor="secondaire" className="text-sm">Secondaire</Label>
                       </div>
                     </div>
                   </div>
