@@ -60,11 +60,11 @@ export default function InvestmentSimulator() {
       anneeDebutDistribution = 5;
       nombreAnneesDistribution = 6; // de l'année 5 à 10 = 6 années
     } else if (data.investmentType === 'secondaire') {
-      // Secondaire : 6 ans, MOIC de 2.2, distributions à partir de l'année 2
-      montantAppelAnnuel = data.souscription / 6; // 6 années d'appel
+      // Secondaire : capital call années 1-2, MOIC de 2.2, distributions années 2-6
+      montantAppelAnnuel = data.souscription / 2; // 2 années d'appel
       valeurTotaleDistribution = data.souscription * 2.2; // MOIC de 2.2
       anneeDebutDistribution = 2;
-      nombreAnneesDistribution = 9; // de l'année 2 à 10 = 9 années
+      nombreAnneesDistribution = 5; // de l'année 2 à 6 = 5 années
     } else {
       // LBO : paramètres existants
       montantAppelAnnuel = data.souscription / data.nombreAnnees;
@@ -94,8 +94,8 @@ export default function InvestmentSimulator() {
           year.capitalCall = -montantAppelAnnuel;
         }
       } else if (data.investmentType === 'secondaire') {
-        // Secondaire : cash décaissé sur 6 ans
-        if (i > 0 && i <= 6) {
+        // Secondaire : cash décaissé sur 2 ans seulement
+        if (i > 0 && i <= 2) {
           year.capitalCall = -montantAppelAnnuel;
         }
       } else {
@@ -115,8 +115,8 @@ export default function InvestmentSimulator() {
           year.distribution = baseDistribution * (0.5 + 1.5 * facteurCroissance); // Distribution croissante de 50% à 150% de la base
         }
       } else if (data.investmentType === 'secondaire') {
-        // Secondaire : distributions égales à partir de l'année 2
-        if (i >= 2 && i <= 10) {
+        // Secondaire : distributions années 2-6 seulement
+        if (i >= 2 && i <= 6) {
           year.distribution = distributionParAnnee;
         }
       } else {
