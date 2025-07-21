@@ -227,10 +227,12 @@ export default function InvestmentSimulator() {
         year.distributionRecyclee = recyclageNecessaire;
       }
 
-      // Calcul des frais de plateforme pour cette année
-      const fraisCetteAnnee = calculatePlatformFees(data.souscription, i);
+      // Calcul des frais de plateforme pour cette année (seulement si capital call ou recyclage)
+      const fraisCetteAnnee = (year.capitalCall < 0 || year.distributionRecyclee > 0) 
+        ? calculatePlatformFees(data.souscription, i) 
+        : 0;
       
-      // Le montant réel décaissé inclut les frais de plateforme
+      // Le montant réel décaissé inclut les frais de plateforme seulement si nécessaire
       year.montantRealDecaisse = year.capitalCall + year.distributionRecyclee + fraisCetteAnnee;
       year.fluxNet = year.distribution - year.distributionRecyclee + year.capitalCall;
 
@@ -381,14 +383,14 @@ export default function InvestmentSimulator() {
                     <TooltipTrigger asChild>
                       <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>Multiple on Invested Capital : ratio entre la valeur finale et le capital réel investi. Indique combien de fois votre investissement initial a été multiplié.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <div className="big-number text-xl font-bold">
-                    {finalResults.moic.toFixed(2)}x
-                  </div>
-                  <p className="text text-sm mt-1">MOIC</p>
+                     <TooltipContent className="max-w-xs">
+                       <p>Total Value to Paid-In capital : ratio entre la valeur finale et le capital réel investi. Indique combien de fois votre investissement initial a été multiplié.</p>
+                     </TooltipContent>
+                   </Tooltip>
+                   <div className="big-number text-xl font-bold">
+                     {finalResults.moic.toFixed(2)}x
+                   </div>
+                   <p className="text text-sm mt-1">TVPI</p>
                 </div>
 
                 <div className="box relative">
