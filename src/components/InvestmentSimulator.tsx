@@ -284,8 +284,11 @@ export default function InvestmentSimulator() {
       return r; // Retourne la dernière estimation
     };
 
-    // Préparer les flux de trésorerie (flux net de chaque année)
-    const fluxTresorerie = years.map(year => year.fluxNet);
+    // Préparer les flux de trésorerie (cash décaissé et valeurs futures)
+    const fluxTresorerie = years.map(year => {
+      // Utilise le cash décaissé (négatif) et les valeurs futures (positive)
+      return year.montantRealDecaisse + year.valeurFuture;
+    });
     
     // Calcul des résultats finaux - les frais sont déduits de la valeur finale
     const valeurFinaleAvantFrais = years.reduce((sum, year) => sum + year.valeurFuture, 0);
