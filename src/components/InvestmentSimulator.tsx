@@ -229,7 +229,7 @@ export default function InvestmentSimulator() {
 
       // Calcul des frais de plateforme pour cette année (seulement si capital call ou recyclage)
       const fraisCetteAnnee = (year.capitalCall < 0 || year.distributionRecyclee > 0) 
-        ? calculatePlatformFees(data.souscription, i) 
+        ? -calculatePlatformFees(data.souscription, i)  // Négatif car c'est un coût
         : 0;
       
       // Le montant réel décaissé inclut les frais de plateforme seulement si nécessaire
