@@ -232,8 +232,8 @@ export default function InvestmentSimulator() {
         ? -calculatePlatformFees(data.souscription, i)  // Négatif car c'est un coût
         : 0;
       
-      // Le montant réel décaissé inclut les frais de plateforme seulement si nécessaire
-      year.montantRealDecaisse = year.capitalCall + year.distributionRecyclee + fraisCetteAnnee;
+      // Cash décaissé = capital call - distribution recyclée + frais
+      year.montantRealDecaisse = year.capitalCall - year.distributionRecyclee + fraisCetteAnnee;
       year.fluxNet = year.distribution - year.distributionRecyclee + year.capitalCall;
 
       const distributionNette = year.distribution - year.distributionRecyclee;
