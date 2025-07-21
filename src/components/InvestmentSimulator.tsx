@@ -227,13 +227,8 @@ export default function InvestmentSimulator() {
         year.distributionRecyclee = recyclageNecessaire;
       }
 
-      // Calcul des frais de plateforme pour cette année (seulement si capital call ou recyclage)
-      const fraisCetteAnnee = (year.capitalCall < 0 || year.distributionRecyclee > 0) 
-        ? -calculatePlatformFees(data.souscription, i)  // Négatif car c'est un coût
-        : 0;
-      
-      // Cash décaissé = capital call - distribution recyclée + frais
-      year.montantRealDecaisse = year.capitalCall - year.distributionRecyclee + fraisCetteAnnee;
+      // Cash décaissé = capital call + distribution recyclée  
+      year.montantRealDecaisse = year.capitalCall + year.distributionRecyclee;
       year.fluxNet = year.distribution - year.distributionRecyclee + year.capitalCall;
 
       const distributionNette = year.distribution - year.distributionRecyclee;
