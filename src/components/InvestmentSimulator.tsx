@@ -58,20 +58,27 @@ export default function InvestmentSimulator() {
       }
     };
 
+    // Calcul du montant net après déduction de tous les frais sur 10 ans
+    let fraisTotaux = 0;
+    for (let i = 1; i <= 10; i++) {
+      fraisTotaux += calculatePlatformFees(data.souscription, i);
+    }
+    const montantNetInvesti = data.souscription - fraisTotaux;
+
     let montantAppelAnnuel: number;
     let nombreAnneesDistribution: number;
     let anneeDebutDistribution: number;
     
     if (data.investmentType === 'vc') {
-      montantAppelAnnuel = data.souscription / 5;
+      montantAppelAnnuel = montantNetInvesti / 5;
       anneeDebutDistribution = 5;
       nombreAnneesDistribution = 6;
     } else if (data.investmentType === 'secondaire') {
-      montantAppelAnnuel = data.souscription / 2;
+      montantAppelAnnuel = montantNetInvesti / 2;
       anneeDebutDistribution = 2;
       nombreAnneesDistribution = 5;
     } else {
-      montantAppelAnnuel = data.souscription / data.nombreAnnees;
+      montantAppelAnnuel = montantNetInvesti / data.nombreAnnees;
       anneeDebutDistribution = 4;
       nombreAnneesDistribution = 7; // années 4-7 (capital) + années 8-10 (profit) = 7 années
     }
@@ -94,7 +101,7 @@ export default function InvestmentSimulator() {
       // Capital call - Pour les montants < 30k, tout en année 1
       if (data.souscription < 30000) {
         if (i === 1) {
-          year.capitalCall = -data.souscription;
+          year.capitalCall = -montantNetInvesti;
         }
       } else {
         // Logique normale pour les montants >= 30k
@@ -151,7 +158,7 @@ export default function InvestmentSimulator() {
       // Capital call - Pour les montants < 30k, tout en année 1
       if (data.souscription < 30000) {
         if (i === 1) {
-          year.capitalCall = -data.souscription;
+          year.capitalCall = -montantNetInvesti;
         }
       } else {
         // Logique normale pour les montants >= 30k
@@ -189,15 +196,15 @@ export default function InvestmentSimulator() {
           year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
         }
       } else {
-        // LBO : souscription rendue années 4-7 (croissant), puis profit années 8-10 (croissant)
+        // LBO : montant net investi rendu années 4-7 (croissant), puis profit années 8-10 (croissant)
         if (i >= 4 && i <= 7) {
-          // Rendre la souscription de manière croissante sur 4 années (4, 5, 6, 7)
+          // Rendre le montant net investi de manière croissante sur 4 années (4, 5, 6, 7)
           const anneeDistribution = i - 4 + 1; // 1, 2, 3, 4
           const facteurCroissance = (2 * anneeDistribution) / (4 + 1); // facteur croissant
-          year.distribution = (data.souscription / 4) * facteurCroissance;
+          year.distribution = (montantNetInvesti / 4) * facteurCroissance;
         } else if (i >= 8 && i <= 10) {
           // Profit distribué de manière croissante en 3 années (8, 9, 10)
-          const profitTotal = valeurTotaleDistributions - data.souscription;
+          const profitTotal = valeurTotaleDistributions - montantNetInvesti;
           const anneeDistribution = i - 8 + 1; // 1, 2, 3
           const facteurCroissance = (2 * anneeDistribution) / (3 + 1); // facteur croissant
           year.distribution = (profitTotal / 3) * facteurCroissance;
