@@ -44,6 +44,20 @@ export default function InvestmentSimulator() {
   });
 
   const calculateSimulation = () => {
+    // Calcul des frais de plateforme selon les tranches
+    const calculatePlatformFees = (montant: number, annee: number) => {
+      if (montant < 30000) {
+        // 0 à 29,999€ : 1,7% par an + 3% première année
+        return annee === 1 ? montant * 0.03 : montant * 0.017;
+      } else if (montant < 100000) {
+        // 30,000 à 99,999€ : 2,5% première année + 1,5% par an
+        return annee === 1 ? montant * 0.025 : montant * 0.015;
+      } else {
+        // 100,000€ et plus : 2% première année + 1,2% par an
+        return annee === 1 ? montant * 0.02 : montant * 0.012;
+      }
+    };
+
     let montantAppelAnnuel: number;
     let nombreAnneesDistribution: number;
     let anneeDebutDistribution: number;
@@ -61,20 +75,6 @@ export default function InvestmentSimulator() {
       anneeDebutDistribution = 4;
       nombreAnneesDistribution = 7; // années 4-7 (capital) + années 8-10 (profit) = 7 années
     }
-
-    // Calcul des frais de plateforme selon les tranches
-    const calculatePlatformFees = (montant: number, annee: number) => {
-      if (montant < 30000) {
-        // 0 à 29,999€ : 1,7% par an + 3% première année
-        return annee === 1 ? montant * 0.03 : montant * 0.017;
-      } else if (montant < 100000) {
-        // 30,000 à 99,999€ : 2,5% première année + 1,5% par an
-        return annee === 1 ? montant * 0.025 : montant * 0.015;
-      } else {
-        // 100,000€ et plus : 2% première année + 1,2% par an
-        return annee === 1 ? montant * 0.02 : montant * 0.012;
-      }
-    };
 
     // Première passe : calculer le capital réel décaissé sans distributions
     const firstPassYears: YearlyData[] = [];
@@ -220,7 +220,11 @@ export default function InvestmentSimulator() {
         year.distributionRecyclee = recyclageNecessaire;
       }
 
-      year.montantRealDecaisse = year.capitalCall + year.distributionRecyclee;
+      // Calcul des frais de plateforme pour cette année
+      const fraisCetteAnnee = calculatePlatformFees(data.souscription, i);
+      
+      // Le montant réel décaissé inclut les frais de plateforme
+      year.montantRealDecaisse = year.capitalCall + year.distributionRecyclee + fraisCetteAnnee;
       year.fluxNet = year.distribution - year.distributionRecyclee + year.capitalCall;
 
       const distributionNette = year.distribution - year.distributionRecyclee;
@@ -234,15 +238,8 @@ export default function InvestmentSimulator() {
       years.push(year);
     }
 
-    // Calcul des frais de plateforme
-    let fraisTotaux = 0;
-    for (let i = 1; i <= 10; i++) {
-      fraisTotaux += calculatePlatformFees(data.souscription, i);
-    }
-
-    // Calcul des résultats finaux avec déduction des frais
-    const valeurFinaleAvantFrais = years.reduce((sum, year) => sum + year.valeurFuture, 0);
-    const valeurFinaleReinvestie = valeurFinaleAvantFrais - fraisTotaux;
+    // Calcul des résultats finaux (les frais sont déjà inclus dans montantRealDecaisse)
+    const valeurFinaleReinvestie = years.reduce((sum, year) => sum + year.valeurFuture, 0);
     const moic = valeurFinaleReinvestie / totalActualCashOut;
     const triAnnuel = Math.pow(moic, 1/10) - 1;
 
