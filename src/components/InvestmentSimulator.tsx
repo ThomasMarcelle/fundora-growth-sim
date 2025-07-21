@@ -227,8 +227,8 @@ export default function InvestmentSimulator() {
         year.distributionRecyclee = recyclageNecessaire;
       }
 
-      // Cash décaissé = capital call + distribution recyclée  
-      year.montantRealDecaisse = year.capitalCall + year.distributionRecyclee;
+      // Cash décaissé = capital call + distribution recyclée (mais 0 si pas de capital call)
+      year.montantRealDecaisse = year.capitalCall < 0 ? year.capitalCall + year.distributionRecyclee : 0;
       year.fluxNet = year.distribution - year.distributionRecyclee + year.capitalCall;
 
       const distributionNette = year.distribution - year.distributionRecyclee;
