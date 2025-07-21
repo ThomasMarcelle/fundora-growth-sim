@@ -44,10 +44,6 @@ export default function InvestmentSimulator() {
   });
 
   const calculateSimulation = () => {
-    const years: YearlyData[] = [];
-    let totalCapitalCalled = 0;
-    let totalActualCashOut = 0;
-    
     let montantAppelAnnuel: number;
     let nombreAnneesDistribution: number;
     let anneeDebutDistribution: number;
@@ -62,12 +58,15 @@ export default function InvestmentSimulator() {
       nombreAnneesDistribution = 5;
     } else {
       montantAppelAnnuel = data.souscription / data.nombreAnnees;
-      anneeDebutDistribution = 4; // LBO : distributions commencent année 4
-      nombreAnneesDistribution = 7; // années 4-6 (capital) + années 7-10 (profit) = 7 années
+      anneeDebutDistribution = 4;
+      nombreAnneesDistribution = 7;
     }
 
-    // Première passe : calculer avec distributions temporaires pour estimer le recyclage
-    for (let i = 0; i <= 10; i++) {
+    // Première passe : calculer le capital réel décaissé sans distributions
+    const firstPassYears: YearlyData[] = [];
+    let totalActualCashOutEstimate = 0;
+    
+    for (let i = 1; i <= 10; i++) { // Commencer à 1 au lieu de 0
       const year: YearlyData = {
         annee: i,
         capitalCall: 0,
@@ -80,78 +79,44 @@ export default function InvestmentSimulator() {
 
       // Capital call
       if (data.investmentType === 'vc') {
-        if (i > 0 && i <= 5) {
+        if (i <= 5) {
           year.capitalCall = -montantAppelAnnuel;
         }
       } else if (data.investmentType === 'secondaire') {
-        if (i > 0 && i <= 2) {
+        if (i <= 2) {
           year.capitalCall = -montantAppelAnnuel;
         }
       } else {
-        if (i > 0 && i <= data.nombreAnnees) {
+        if (i <= data.nombreAnnees) {
           year.capitalCall = -montantAppelAnnuel;
         }
       }
 
-      // Distributions temporaires pour estimation
-      if (data.investmentType === 'vc') {
-        if (i >= 5 && i <= 10) {
-          year.distribution = 10000; // Valeur temporaire pour estimation
-        }
-      } else if (data.investmentType === 'secondaire') {
-        if (i >= 2 && i <= 6) {
-          year.distribution = 10000; // Valeur temporaire pour estimation
-        }
-      } else {
-        // LBO : distributions années 4-6 (capital) + années 7-10 (profit)
-        if (i >= 4 && i <= 10) {
-          year.distribution = 10000; // Valeur temporaire pour estimation
-        }
-      }
-
-      // Calcul du recyclage avec distributions temporaires
-      const capitalDejaAppele = years.slice(0, i).reduce((sum, prevYear) => {
-        return sum + Math.abs(prevYear.capitalCall) + prevYear.distributionRecyclee;
-      }, 0);
+      // Pas de distributions dans cette passe d'estimation
+      year.distribution = 0;
+      year.distributionRecyclee = 0;
+      year.montantRealDecaisse = year.capitalCall;
       
-      const commitmentRestant = Math.max(0, data.souscription - capitalDejaAppele);
-
-      if (year.distribution > 0 && year.capitalCall < 0) {
-        const capitalCallCetteAnnee = Math.abs(year.capitalCall);
-        const recyclageNecessaire = Math.min(year.distribution, capitalCallCetteAnnee);
-        year.distributionRecyclee = recyclageNecessaire;
-      } else if (year.distribution > 0 && commitmentRestant > 0) {
-        const recyclageNecessaire = Math.min(year.distribution, commitmentRestant);
-        year.distributionRecyclee = recyclageNecessaire;
-      }
-
-      year.montantRealDecaisse = year.capitalCall + year.distributionRecyclee;
-      totalCapitalCalled += Math.abs(year.capitalCall);
-      totalActualCashOut += Math.abs(year.montantRealDecaisse);
-      years.push(year);
+      totalActualCashOutEstimate += Math.abs(year.montantRealDecaisse);
+      firstPassYears.push(year);
     }
 
     // Maintenant calculer les vraies distributions basées sur le capital réel décaissé
-    const capitalRealDecaisse = totalActualCashOut;
-    
-    // Réinitialiser pour le calcul final
-    years.length = 0;
-    totalCapitalCalled = 0;
-    totalActualCashOut = 0;
-
-    // Calcul des distributions réelles selon les MOICs
     let valeurTotaleDistributions: number;
     if (data.investmentType === 'vc') {
-      valeurTotaleDistributions = capitalRealDecaisse * 4; // MOIC de 4 sur capital réel
+      valeurTotaleDistributions = totalActualCashOutEstimate * 4; // MOIC de 4
     } else if (data.investmentType === 'secondaire') {
-      valeurTotaleDistributions = capitalRealDecaisse * 2.2; // MOIC de 2.2 sur capital réel
+      valeurTotaleDistributions = totalActualCashOutEstimate * 2.2; // MOIC de 2.2
     } else {
-      // LBO : souscription rendue + profit (MOIC 2.5 sur capital réel)
-      valeurTotaleDistributions = capitalRealDecaisse * 2.5;
+      valeurTotaleDistributions = totalActualCashOutEstimate * 2.5; // MOIC de 2.5
     }
 
     // Deuxième passe : calcul final avec les vraies distributions
-    for (let i = 0; i <= 10; i++) {
+    const years: YearlyData[] = [];
+    let totalCapitalCalled = 0;
+    let totalActualCashOut = 0;
+
+    for (let i = 1; i <= 10; i++) { // Commencer à 1 au lieu de 0
       const year: YearlyData = {
         annee: i,
         capitalCall: 0,
@@ -164,15 +129,15 @@ export default function InvestmentSimulator() {
 
       // Capital call (identique à la première passe)
       if (data.investmentType === 'vc') {
-        if (i > 0 && i <= 5) {
+        if (i <= 5) {
           year.capitalCall = -montantAppelAnnuel;
         }
       } else if (data.investmentType === 'secondaire') {
-        if (i > 0 && i <= 2) {
+        if (i <= 2) {
           year.capitalCall = -montantAppelAnnuel;
         }
       } else {
-        if (i > 0 && i <= data.nombreAnnees) {
+        if (i <= data.nombreAnnees) {
           year.capitalCall = -montantAppelAnnuel;
         }
       }
@@ -191,17 +156,15 @@ export default function InvestmentSimulator() {
       } else {
         // LBO : souscription rendue années 4-6, puis profit années 7-10
         if (i >= 4 && i <= 6) {
-          // Rendre la souscription totale en 3 années (4, 5, 6)
           year.distribution = data.souscription / 3;
         } else if (i >= 7 && i <= 10) {
-          // Profit distribué en 4 années (7, 8, 9, 10)
           const profitTotal = valeurTotaleDistributions - data.souscription;
           year.distribution = profitTotal / 4;
         }
       }
 
-      // Calcul du recyclage (identique à la première passe)
-      const capitalDejaAppele = years.slice(0, i).reduce((sum, prevYear) => {
+      // Calcul du recyclage
+      const capitalDejaAppele = years.reduce((sum, prevYear) => {
         return sum + Math.abs(prevYear.capitalCall) + prevYear.distributionRecyclee;
       }, 0);
       
