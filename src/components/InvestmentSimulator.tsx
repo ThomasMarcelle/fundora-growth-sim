@@ -40,7 +40,8 @@ export default function InvestmentSimulator() {
     capitalRealInvesti: 0,
     valeurFinaleReinvestie: 0,
     moic: 0,
-    triAnnuel: 0
+    triAnnuel: 0,
+    fraisTotaux: 0
   });
 
   const calculateSimulation = () => {
@@ -64,12 +65,12 @@ export default function InvestmentSimulator() {
       }
     };
 
-    // Calcul du montant net après déduction de tous les frais sur 10 ans
+    // Calcul des frais totaux (seront déduits à la fin)
     let fraisTotaux = 0;
     for (let i = 1; i <= 10; i++) {
       fraisTotaux += calculatePlatformFees(data.souscription, i);
     }
-    const montantNetInvesti = data.souscription - fraisTotaux;
+    const montantNetInvesti = data.souscription; // Tout est investi, frais déduits à la fin
 
     let montantAppelAnnuel: number;
     let nombreAnneesDistribution: number;
@@ -286,8 +287,9 @@ export default function InvestmentSimulator() {
     // Préparer les flux de trésorerie (flux net de chaque année)
     const fluxTresorerie = years.map(year => year.fluxNet);
     
-    // Calcul des résultats finaux
-    const valeurFinaleReinvestie = years.reduce((sum, year) => sum + year.valeurFuture, 0);
+    // Calcul des résultats finaux - les frais sont déduits de la valeur finale
+    const valeurFinaleAvantFrais = years.reduce((sum, year) => sum + year.valeurFuture, 0);
+    const valeurFinaleReinvestie = valeurFinaleAvantFrais - fraisTotaux;
     const moic = valeurFinaleReinvestie / totalActualCashOut;
     const triAnnuel = calculateTRI(fluxTresorerie);
 
@@ -297,7 +299,8 @@ export default function InvestmentSimulator() {
       capitalRealInvesti: totalActualCashOut,
       valeurFinaleReinvestie,
       moic,
-      triAnnuel
+      triAnnuel,
+      fraisTotaux
     });
   };
 
@@ -386,7 +389,7 @@ export default function InvestmentSimulator() {
             {/* Résultats - Colonne de droite */}
             <div className="space-y-6 h-fit">
               {/* Résultats clés */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="box relative">
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -408,13 +411,28 @@ export default function InvestmentSimulator() {
                       <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs">
-                      <p>Valeur totale de votre investissement à la fin de la période, incluant le réinvestissement des distributions nettes au taux de 15% annuel.</p>
+                      <p>Valeur totale de votre investissement à la fin de la période, incluant le réinvestissement des distributions nettes au taux de 15% annuel, après déduction des frais totaux.</p>
                     </TooltipContent>
                   </Tooltip>
                   <div className="big-number text-xl font-bold">
                     {Math.round(finalResults.valeurFinaleReinvestie).toLocaleString('fr-FR')} €
                   </div>
                   <p className="text text-sm mt-1">Valeur finale</p>
+                </div>
+
+                <div className="box relative">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>Frais totaux de la plateforme sur 10 ans, déduits de la valeur finale. Comprend les frais d'entrée et les frais annuels de gestion.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <div className="big-number text-xl font-bold text-destructive">
+                    -{Math.round(finalResults.fraisTotaux).toLocaleString('fr-FR')} €
+                  </div>
+                  <p className="text text-sm mt-1">Frais totaux</p>
                 </div>
 
                 <div className="box relative">
