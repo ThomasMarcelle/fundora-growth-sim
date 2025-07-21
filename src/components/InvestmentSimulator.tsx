@@ -94,7 +94,7 @@ export default function InvestmentSimulator() {
     } else if (data.investmentType === 'secondaire') {
       valeurTotaleDistributions = capitalTotalInvesti * 2.2; // MOIC de 2.2
     } else {
-      valeurTotaleDistributions = capitalTotalInvesti * data.multipleBaseCible;
+      valeurTotaleDistributions = capitalTotalInvesti * 2.5; // MOIC de 2.5 pour LBO
     }
 
     const distributionParAnnee = valeurTotaleDistributions / nombreAnneesDistribution;
