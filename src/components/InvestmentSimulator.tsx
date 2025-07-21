@@ -242,10 +242,47 @@ export default function InvestmentSimulator() {
       years.push(year);
     }
 
-    // Calcul des résultats finaux (les frais sont déjà inclus dans montantRealDecaisse)
+    // Calcul du TRI avec la vraie formule mathématique
+    const calculateTRI = (fluxTresorerie: number[]): number => {
+      // Méthode de Newton-Raphson pour résoudre VAN = 0
+      let r = 0.1; // Estimation initiale de 10%
+      const tolerance = 1e-6;
+      const maxIterations = 100;
+      
+      for (let i = 0; i < maxIterations; i++) {
+        let van = 0;
+        let vanDerivee = 0;
+        
+        // Calcul de la VAN et de sa dérivée
+        for (let t = 0; t < fluxTresorerie.length; t++) {
+          const denominateur = Math.pow(1 + r, t);
+          van += fluxTresorerie[t] / denominateur;
+          if (t > 0) {
+            vanDerivee -= (t * fluxTresorerie[t]) / Math.pow(1 + r, t + 1);
+          }
+        }
+        
+        // Si VAN est proche de 0, on a trouvé le TRI
+        if (Math.abs(van) < tolerance) {
+          return r;
+        }
+        
+        // Mise à jour de r selon Newton-Raphson
+        if (Math.abs(vanDerivee) > tolerance) {
+          r = r - van / vanDerivee;
+        }
+      }
+      
+      return r; // Retourne la dernière estimation
+    };
+
+    // Préparer les flux de trésorerie (flux net de chaque année)
+    const fluxTresorerie = years.map(year => year.fluxNet);
+    
+    // Calcul des résultats finaux
     const valeurFinaleReinvestie = years.reduce((sum, year) => sum + year.valeurFuture, 0);
     const moic = valeurFinaleReinvestie / totalActualCashOut;
-    const triAnnuel = Math.pow(moic, 1/10) - 1;
+    const triAnnuel = calculateTRI(fluxTresorerie);
 
     setResults(years);
     setFinalResults({
