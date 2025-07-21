@@ -211,20 +211,20 @@ export default function InvestmentSimulator() {
         }
       }
 
-      // Calcul du recyclage
+      // Calcul du recyclage - seulement si capital call ET distribution la même année
       const capitalDejaAppele = years.reduce((sum, prevYear) => {
         return sum + Math.abs(prevYear.capitalCall) + prevYear.distributionRecyclee;
       }, 0);
       
       const commitmentRestant = Math.max(0, data.souscription - capitalDejaAppele);
 
+      // Recyclage uniquement quand capital call ET distribution la même année
       if (year.distribution > 0 && year.capitalCall < 0) {
         const capitalCallCetteAnnee = Math.abs(year.capitalCall);
         const recyclageNecessaire = Math.min(year.distribution, capitalCallCetteAnnee);
         year.distributionRecyclee = recyclageNecessaire;
-      } else if (year.distribution > 0 && commitmentRestant > 0) {
-        const recyclageNecessaire = Math.min(year.distribution, commitmentRestant);
-        year.distributionRecyclee = recyclageNecessaire;
+      } else {
+        year.distributionRecyclee = 0; // Pas de recyclage si pas de capital call
       }
 
       // Cash décaissé = capital call + distribution recyclée (mais 0 si pas de capital call)
