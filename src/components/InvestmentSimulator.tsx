@@ -44,62 +44,48 @@ export default function InvestmentSimulator() {
   });
 
   const calculateSimulation = () => {
-    const years: YearlyData[] = [];
-    let totalCapitalCalled = 0;
-    let totalActualCashOut = 0;
-    
+    // Première passe : calculer le capital réel décaissé avec des distributions temporaires
+    let capitalRealDecaisseEstime = 0;
     let montantAppelAnnuel: number;
     let nombreAnneesDistribution: number;
     let anneeDebutDistribution: number;
     
     if (data.investmentType === 'vc') {
-      // VC : MOIC de 4, distributions basées sur le capital réellement investi
-      montantAppelAnnuel = data.souscription / 5; // 5 années d'appel
+      montantAppelAnnuel = data.souscription / 5;
       anneeDebutDistribution = 5;
-      nombreAnneesDistribution = 6; // de l'année 5 à 10 = 6 années
+      nombreAnneesDistribution = 6;
     } else if (data.investmentType === 'secondaire') {
-      // Secondaire : capital call années 1-2, MOIC de 2.2
-      montantAppelAnnuel = data.souscription / 2; // 2 années d'appel
+      montantAppelAnnuel = data.souscription / 2;
       anneeDebutDistribution = 2;
-      nombreAnneesDistribution = 5; // de l'année 2 à 6 = 5 années
+      nombreAnneesDistribution = 5;
     } else {
-      // LBO : paramètres existants
       montantAppelAnnuel = data.souscription / data.nombreAnnees;
       anneeDebutDistribution = 3;
-      nombreAnneesDistribution = 8; // Capital (années 3-6) + Profit (années 7-10)
-    }
-    
-    // Premier passage : calculer le capital réellement investi
-    let capitalTotalInvesti = 0;
-    for (let i = 1; i <= 10; i++) {
-      if (data.investmentType === 'vc') {
-        if (i <= 5) {
-          capitalTotalInvesti += montantAppelAnnuel;
-        }
-      } else if (data.investmentType === 'secondaire') {
-        if (i <= 2) {
-          capitalTotalInvesti += montantAppelAnnuel;
-        }
-      } else {
-        if (i <= data.nombreAnnees) {
-          capitalTotalInvesti += montantAppelAnnuel;
-        }
-      }
+      nombreAnneesDistribution = 8;
     }
 
-    // Calcul des distributions basées sur le capital réellement investi et le MOIC
+    // Estimation du capital réel décaissé (approximation grossière)
+    const capitalTotalAppele = data.investmentType === 'vc' ? data.souscription : 
+                              data.investmentType === 'secondaire' ? data.souscription : 
+                              data.souscription;
+    capitalRealDecaisseEstime = capitalTotalAppele * 0.8; // Approximation : 80% du capital appelé est réellement décaissé
+
+    // Calcul des distributions basées sur le capital réel décaissé estimé et les MOICs fixes
     let valeurTotaleDistributions: number;
     if (data.investmentType === 'vc') {
-      valeurTotaleDistributions = capitalTotalInvesti * 4; // MOIC de 4
+      valeurTotaleDistributions = capitalRealDecaisseEstime * 4; // MOIC de 4
     } else if (data.investmentType === 'secondaire') {
-      valeurTotaleDistributions = capitalTotalInvesti * 2.2; // MOIC de 2.2
+      valeurTotaleDistributions = capitalRealDecaisseEstime * 2.2; // MOIC de 2.2
     } else {
-      valeurTotaleDistributions = capitalTotalInvesti * 2.5; // MOIC de 2.5 pour LBO
+      valeurTotaleDistributions = capitalRealDecaisseEstime * 2.5; // MOIC de 2.5 pour LBO
     }
 
+    // Deuxième passe : calcul réel avec les distributions correctes
+    const years: YearlyData[] = [];
+    let totalCapitalCalled = 0;
+    let totalActualCashOut = 0;
     const distributionParAnnee = valeurTotaleDistributions / nombreAnneesDistribution;
 
-    // Calcul pour chaque année (0 à 10)
     for (let i = 0; i <= 10; i++) {
       const year: YearlyData = {
         annee: i,
@@ -113,17 +99,14 @@ export default function InvestmentSimulator() {
 
       // Capital call
       if (data.investmentType === 'vc') {
-        // VC : cash décaissé sur 5 ans
         if (i > 0 && i <= 5) {
           year.capitalCall = -montantAppelAnnuel;
         }
       } else if (data.investmentType === 'secondaire') {
-        // Secondaire : cash décaissé sur 2 ans seulement
         if (i > 0 && i <= 2) {
           year.capitalCall = -montantAppelAnnuel;
         }
       } else {
-        // LBO : pendant les années d'appel définies
         if (i > 0 && i <= data.nombreAnnees) {
           year.capitalCall = -montantAppelAnnuel;
         }
@@ -131,57 +114,48 @@ export default function InvestmentSimulator() {
 
       // Distributions
       if (data.investmentType === 'vc') {
-        // VC : distributions linéaires croissantes à partir de l'année 5
         if (i >= 5 && i <= 10) {
-          // Progression linéaire croissante : distribution augmente chaque année
-          const facteurCroissance = (i - 5 + 1) / nombreAnneesDistribution; // de 1/6 à 6/6
-          const baseDistribution = valeurTotaleDistributions / nombreAnneesDistribution;
-          year.distribution = baseDistribution * (0.5 + 1.5 * facteurCroissance); // Distribution croissante de 50% à 150% de la base
+          const facteurCroissance = (i - 5 + 1) / nombreAnneesDistribution;
+          year.distribution = distributionParAnnee * (0.5 + 1.5 * facteurCroissance);
         }
       } else if (data.investmentType === 'secondaire') {
-        // Secondaire : distributions années 2-6 seulement
         if (i >= 2 && i <= 6) {
           year.distribution = distributionParAnnee;
         }
       } else {
         // LBO : Capital rendu années 3-6, puis profit années 7-10
-        const capitalARendreParAnnee = capitalTotalInvesti / 4; // 4 années (3,4,5,6)
-        const profitTotal = valeurTotaleDistributions - capitalTotalInvesti;
-        const profitParAnnee = profitTotal / 4; // 4 années (7,8,9,10)
-        
         if (i >= 3 && i <= 6) {
-          year.distribution = capitalARendreParAnnee;
+          year.distribution = capitalRealDecaisseEstime / 4; // Capital en 4 années
         } else if (i >= 7 && i <= 10) {
-          year.distribution = profitParAnnee;
+          const profitTotal = valeurTotaleDistributions - capitalRealDecaisseEstime;
+          year.distribution = profitTotal / 4; // Profit en 4 années
         }
       }
 
-      // Calcul du commitment restant avant cette année
+      // Calcul du commitment restant
       const capitalDejaAppele = years.slice(0, i).reduce((sum, prevYear) => {
         return sum + Math.abs(prevYear.capitalCall) + prevYear.distributionRecyclee;
       }, 0);
       
       const commitmentRestant = Math.max(0, data.souscription - capitalDejaAppele);
 
-      // Distribution recyclée (utilisée pour financer le commitment)
+      // Distribution recyclée
       if (year.distribution > 0 && year.capitalCall < 0) {
-        // En cas de capital call et distribution simultanés, on recycle pour réduire le cash à décaisser
         const capitalCallCetteAnnee = Math.abs(year.capitalCall);
         const recyclageNecessaire = Math.min(year.distribution, capitalCallCetteAnnee);
         year.distributionRecyclee = recyclageNecessaire;
       } else if (year.distribution > 0 && commitmentRestant > 0) {
-        // Sinon, on recycle pour financer les futurs capital calls selon le commitment restant
         const recyclageNecessaire = Math.min(year.distribution, commitmentRestant);
         year.distributionRecyclee = recyclageNecessaire;
       }
 
-      // Montant réel décaissé (cash effectivement sorti de poche)
+      // Montant réel décaissé
       year.montantRealDecaisse = year.capitalCall + year.distributionRecyclee;
 
-      // Flux net (pour calcul TRI)
+      // Flux net
       year.fluxNet = year.distribution - year.distributionRecyclee + year.capitalCall;
 
-      // Valeur future (réinvestissement des distributions nettes)
+      // Valeur future
       const distributionNette = year.distribution - year.distributionRecyclee;
       if (distributionNette > 0) {
         const anneesRestantes = 10 - i;
@@ -194,18 +168,43 @@ export default function InvestmentSimulator() {
       years.push(year);
     }
 
+    // Ajustement final : recalculer les distributions pour respecter exactement les MOICs
+    const capitalRealFinal = totalActualCashOut;
+    let moicCible: number;
+    if (data.investmentType === 'vc') {
+      moicCible = 4;
+    } else if (data.investmentType === 'secondaire') {
+      moicCible = 2.2;
+    } else {
+      moicCible = 2.5;
+    }
+
+    const distributionTotaleCible = capitalRealFinal * moicCible;
+    const facteurAjustement = distributionTotaleCible / valeurTotaleDistributions;
+
+    // Ajuster toutes les distributions et recalculer
+    years.forEach(year => {
+      if (year.distribution > 0) {
+        year.distribution *= facteurAjustement;
+        
+        // Recalculer la valeur future avec la nouvelle distribution
+        const distributionNette = year.distribution - year.distributionRecyclee;
+        if (distributionNette > 0) {
+          const anneesRestantes = 10 - year.annee;
+          year.valeurFuture = distributionNette * Math.pow(1 + data.tauxReinvestissement, anneesRestantes);
+        }
+      }
+    });
+
     // Calcul des résultats finaux
-    const capitalRealDecaisse = totalActualCashOut;
     const valeurFinaleReinvestie = years.reduce((sum, year) => sum + year.valeurFuture, 0);
-    const moic = valeurFinaleReinvestie / capitalRealDecaisse;
-    
-    // Calcul du TRI (approximation)
+    const moic = valeurFinaleReinvestie / capitalRealFinal;
     const triAnnuel = Math.pow(moic, 1/10) - 1;
 
     setResults(years);
     setFinalResults({
       capitalTotalRealInvesti: totalCapitalCalled,
-      capitalRealInvesti: capitalRealDecaisse,
+      capitalRealInvesti: capitalRealFinal,
       valeurFinaleReinvestie,
       moic,
       triAnnuel
