@@ -241,7 +241,14 @@ export default function InvestmentSimulator() {
 
       const distributionNette = year.distribution - year.distributionRecyclee;
       if (distributionNette > 0) {
-        const anneesRestantes = 10 - i;
+        let anneesRestantes: number;
+        if (data.investmentType === 'secondaire') {
+          // Pour le secondaire, valeur future calculée à T6
+          anneesRestantes = Math.max(0, 6 - i);
+        } else {
+          // Pour LBO et VC, valeur future calculée à T10
+          anneesRestantes = 10 - i;
+        }
         year.valeurFuture = distributionNette * Math.pow(1 + data.tauxReinvestissement, anneesRestantes);
       }
 
