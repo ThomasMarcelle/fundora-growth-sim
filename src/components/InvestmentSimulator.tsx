@@ -390,7 +390,7 @@ export default function InvestmentSimulator() {
                     </TooltipContent>
                   </Tooltip>
                   <div className="big-number text-xl font-bold">
-                    {finalResults.capitalRealInvesti.toLocaleString('fr-FR')} €
+                    {Math.round(finalResults.capitalRealInvesti).toLocaleString('fr-FR')} €
                   </div>
                   <p className="text text-sm mt-1">Capital réel investi</p>
                 </div>
@@ -405,7 +405,7 @@ export default function InvestmentSimulator() {
                     </TooltipContent>
                   </Tooltip>
                   <div className="big-number text-xl font-bold">
-                    {finalResults.valeurFinaleReinvestie.toLocaleString('fr-FR')} €
+                    {Math.round(finalResults.valeurFinaleReinvestie).toLocaleString('fr-FR')} €
                   </div>
                   <p className="text text-sm mt-1">Valeur finale</p>
                 </div>
@@ -420,7 +420,7 @@ export default function InvestmentSimulator() {
                      </TooltipContent>
                    </Tooltip>
                    <div className="big-number text-xl font-bold">
-                     {finalResults.moic.toFixed(2)}x
+                     {Math.round(finalResults.moic * 100) / 100}x
                    </div>
                    <p className="text text-sm mt-1">TVPI</p>
                 </div>
@@ -435,7 +435,7 @@ export default function InvestmentSimulator() {
                     </TooltipContent>
                   </Tooltip>
                   <div className="big-number text-xl font-bold">
-                    {(finalResults.triAnnuel * 100).toFixed(1)}%
+                    {Math.round(finalResults.triAnnuel * 100)}%
                   </div>
                   <p className="text text-sm mt-1">TRI Annuel</p>
                 </div>
@@ -493,21 +493,21 @@ export default function InvestmentSimulator() {
                       <tr key={index} className="border-b border-border hover:bg-muted/50">
                         <td className="p-2 font-medium">{year.annee}</td>
                         <td className="text-right p-2 text-red-400">
-                          {year.capitalCall < 0 ? `${year.capitalCall.toLocaleString('fr-FR')} €` : '-'}
-                        </td>
-                        <td className="text-right p-2 text-green-400">
-                          {year.distribution > 0 ? `${year.distribution.toLocaleString('fr-FR')} €` : '-'}
-                        </td>
-                        <td className="text-right p-2 text-blue-400 italic">
-                          {year.distributionRecyclee > 0 ? `${year.distributionRecyclee.toLocaleString('fr-FR')} €` : '-'}
-                        </td>
-                        <td className="text-right p-2 font-medium">
-                          <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
-                            {year.montantRealDecaisse.toLocaleString('fr-FR')} €
-                          </span>
-                        </td>
-                        <td className="text-right p-2 text-primary">
-                          {year.valeurFuture > 0 ? `${year.valeurFuture.toLocaleString('fr-FR')} €` : '-'}
+                           {year.capitalCall < 0 ? `${Math.round(year.capitalCall).toLocaleString('fr-FR')} €` : '-'}
+                         </td>
+                         <td className="text-right p-2 text-green-400">
+                           {year.distribution > 0 ? `${Math.round(year.distribution).toLocaleString('fr-FR')} €` : '-'}
+                         </td>
+                         <td className="text-right p-2 text-blue-400 italic">
+                           {year.distributionRecyclee > 0 ? `${Math.round(year.distributionRecyclee).toLocaleString('fr-FR')} €` : '-'}
+                         </td>
+                         <td className="text-right p-2 font-medium">
+                           <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
+                             {Math.round(year.montantRealDecaisse).toLocaleString('fr-FR')} €
+                           </span>
+                         </td>
+                         <td className="text-right p-2 text-primary">
+                           {year.valeurFuture > 0 ? `${Math.round(year.valeurFuture).toLocaleString('fr-FR')} €` : '-'}
                         </td>
                       </tr>
                     ))}
