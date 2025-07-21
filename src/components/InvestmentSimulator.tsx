@@ -59,14 +59,14 @@ export default function InvestmentSimulator() {
     } else {
       montantAppelAnnuel = data.souscription / data.nombreAnnees;
       anneeDebutDistribution = 4;
-      nombreAnneesDistribution = 7;
+      nombreAnneesDistribution = 7; // années 4-7 (capital) + années 8-10 (profit) = 7 années
     }
 
     // Première passe : calculer le capital réel décaissé sans distributions
     const firstPassYears: YearlyData[] = [];
     let totalActualCashOutEstimate = 0;
     
-    for (let i = 1; i <= 10; i++) { // Commencer à 1 au lieu de 0
+    for (let i = 1; i <= 10; i++) {
       const year: YearlyData = {
         annee: i,
         capitalCall: 0,
@@ -111,12 +111,12 @@ export default function InvestmentSimulator() {
       valeurTotaleDistributions = totalActualCashOutEstimate * 2.5; // MOIC de 2.5
     }
 
-    // Deuxième passe : calcul final avec les vraies distributions
+    // Deuxième passe : calcul final avec les vraies distributions linéaires
     const years: YearlyData[] = [];
     let totalCapitalCalled = 0;
     let totalActualCashOut = 0;
 
-    for (let i = 1; i <= 10; i++) { // Commencer à 1 au lieu de 0
+    for (let i = 1; i <= 10; i++) {
       const year: YearlyData = {
         annee: i,
         capitalCall: 0,
@@ -142,24 +142,26 @@ export default function InvestmentSimulator() {
         }
       }
 
-      // Vraies distributions
+      // Distributions linéaires pour toutes les stratégies
       if (data.investmentType === 'vc') {
+        // VC : distributions linéaires années 5-10
         if (i >= 5 && i <= 10) {
-          const facteurCroissance = (i - 5 + 1) / nombreAnneesDistribution;
-          const baseDistribution = valeurTotaleDistributions / nombreAnneesDistribution;
-          year.distribution = baseDistribution * (0.5 + 1.5 * facteurCroissance);
+          year.distribution = valeurTotaleDistributions / nombreAnneesDistribution;
         }
       } else if (data.investmentType === 'secondaire') {
+        // Secondaire : distributions linéaires années 2-6
         if (i >= 2 && i <= 6) {
           year.distribution = valeurTotaleDistributions / nombreAnneesDistribution;
         }
       } else {
-        // LBO : souscription rendue années 4-6, puis profit années 7-10
-        if (i >= 4 && i <= 6) {
-          year.distribution = data.souscription / 3;
-        } else if (i >= 7 && i <= 10) {
+        // LBO : souscription rendue années 4-7, puis profit années 8-10
+        if (i >= 4 && i <= 7) {
+          // Rendre la souscription totale en 4 années (4, 5, 6, 7)
+          year.distribution = data.souscription / 4;
+        } else if (i >= 8 && i <= 10) {
+          // Profit distribué en 3 années (8, 9, 10)
           const profitTotal = valeurTotaleDistributions - data.souscription;
-          year.distribution = profitTotal / 4;
+          year.distribution = profitTotal / 3;
         }
       }
 
