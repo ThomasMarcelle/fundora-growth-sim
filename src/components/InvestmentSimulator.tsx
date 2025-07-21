@@ -77,18 +77,25 @@ export default function InvestmentSimulator() {
         valeurFuture: 0
       };
 
-      // Capital call
-      if (data.investmentType === 'vc') {
-        if (i <= 5) {
-          year.capitalCall = -montantAppelAnnuel;
-        }
-      } else if (data.investmentType === 'secondaire') {
-        if (i <= 2) {
-          year.capitalCall = -montantAppelAnnuel;
+      // Capital call - Pour les montants < 30k, tout en année 1
+      if (data.souscription < 30000) {
+        if (i === 1) {
+          year.capitalCall = -data.souscription;
         }
       } else {
-        if (i <= data.nombreAnnees) {
-          year.capitalCall = -montantAppelAnnuel;
+        // Logique normale pour les montants >= 30k
+        if (data.investmentType === 'vc') {
+          if (i <= 5) {
+            year.capitalCall = -montantAppelAnnuel;
+          }
+        } else if (data.investmentType === 'secondaire') {
+          if (i <= 2) {
+            year.capitalCall = -montantAppelAnnuel;
+          }
+        } else {
+          if (i <= data.nombreAnnees) {
+            year.capitalCall = -montantAppelAnnuel;
+          }
         }
       }
 
@@ -127,18 +134,25 @@ export default function InvestmentSimulator() {
         valeurFuture: 0
       };
 
-      // Capital call (identique à la première passe)
-      if (data.investmentType === 'vc') {
-        if (i <= 5) {
-          year.capitalCall = -montantAppelAnnuel;
-        }
-      } else if (data.investmentType === 'secondaire') {
-        if (i <= 2) {
-          year.capitalCall = -montantAppelAnnuel;
+      // Capital call - Pour les montants < 30k, tout en année 1
+      if (data.souscription < 30000) {
+        if (i === 1) {
+          year.capitalCall = -data.souscription;
         }
       } else {
-        if (i <= data.nombreAnnees) {
-          year.capitalCall = -montantAppelAnnuel;
+        // Logique normale pour les montants >= 30k
+        if (data.investmentType === 'vc') {
+          if (i <= 5) {
+            year.capitalCall = -montantAppelAnnuel;
+          }
+        } else if (data.investmentType === 'secondaire') {
+          if (i <= 2) {
+            year.capitalCall = -montantAppelAnnuel;
+          }
+        } else {
+          if (i <= data.nombreAnnees) {
+            year.capitalCall = -montantAppelAnnuel;
+          }
         }
       }
 
