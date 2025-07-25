@@ -13,6 +13,7 @@ interface SimulationData {
   multipleBaseCible: number;
   tauxReinvestissement: number;
   investmentType: 'BUYOUT' | 'VENTURE_CAPITAL' | 'SECONDARY' | 'GROWTH_CAPITAL' | 'DEBT';
+  moicCible: number;
 }
 
 interface YearlyData {
@@ -31,7 +32,8 @@ export default function InvestmentSimulator() {
     nombreAnnees: 5,
     multipleBaseCible: 2.5,
     tauxReinvestissement: 0.15,
-    investmentType: 'BUYOUT'
+    investmentType: 'BUYOUT',
+    moicCible: 2.5
   });
 
   const [results, setResults] = useState<YearlyData[]>([]);
@@ -145,16 +147,7 @@ export default function InvestmentSimulator() {
     }
 
     // Maintenant calculer les vraies distributions basées sur le capital réel décaissé
-    let valeurTotaleDistributions: number;
-    if (data.investmentType === 'VENTURE_CAPITAL') {
-      valeurTotaleDistributions = totalActualCashOutEstimate * 4; // MOIC de 4
-    } else if (data.investmentType === 'GROWTH_CAPITAL') {
-      valeurTotaleDistributions = totalActualCashOutEstimate * 3.5; // MOIC de 3.5
-    } else if (data.investmentType === 'SECONDARY') {
-      valeurTotaleDistributions = totalActualCashOutEstimate * 2.2; // MOIC de 2.2
-    } else { // BUYOUT
-      valeurTotaleDistributions = totalActualCashOutEstimate * 2.5; // MOIC de 2.5
-    }
+    const valeurTotaleDistributions = totalActualCashOutEstimate * data.moicCible;
 
     // Deuxième passe : calcul final avec les vraies distributions linéaires
     const years: YearlyData[] = [];
@@ -348,9 +341,29 @@ export default function InvestmentSimulator() {
   };
 
   const handleInvestmentTypeChange = (type: 'BUYOUT' | 'VENTURE_CAPITAL' | 'SECONDARY' | 'GROWTH_CAPITAL' | 'DEBT') => {
+    // Définir les MOIC par défaut selon le type d'investissement
+    let defaultMoic = 2.5;
+    switch(type) {
+      case 'VENTURE_CAPITAL':
+        defaultMoic = 4;
+        break;
+      case 'GROWTH_CAPITAL':
+        defaultMoic = 3.5;
+        break;
+      case 'SECONDARY':
+        defaultMoic = 2.2;
+        break;
+      case 'BUYOUT':
+        defaultMoic = 2.5;
+        break;
+      default:
+        defaultMoic = 2.5;
+    }
+    
     setData(prev => ({
       ...prev,
-      investmentType: type
+      investmentType: type,
+      moicCible: defaultMoic
     }));
   };
 
@@ -425,6 +438,21 @@ export default function InvestmentSimulator() {
                         <Label htmlFor="secondary" className="text-sm">Secondary</Label>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="moicCible">MOIC Cible</Label>
+                    <Input
+                      id="moicCible"
+                      type="number"
+                      step="0.1"
+                      min="1"
+                      value={data.moicCible}
+                      onChange={(e) => handleInputChange('moicCible', Number(e.target.value))}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Multiple sur le capital investi (ex: 2.5 = +150% de retour)
+                    </p>
                   </div>
                 </div>
               </div>
