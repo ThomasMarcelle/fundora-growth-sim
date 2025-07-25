@@ -220,17 +220,28 @@ export default function InvestmentSimulator() {
       if (data.investmentType === 'DEBT') {
         // Logique spéciale pour la dette : coupons + remboursement du capital
         
-        // Coupons de 11% sur le capital appelé la même année
-        let couponAnnuel = 0;
-        if (year.capitalCall < 0) {
-          couponAnnuel = Math.abs(year.capitalCall) * (data.rendementCible / 100);
-        }
+        // Calculer le capital call cumulé jusqu'à cette année (incluse)
+        const capitalCallCumule = years.slice(0, i).reduce((sum, prevYear) => 
+          sum + Math.abs(prevYear.capitalCall), 0
+        ) + Math.abs(year.capitalCall);
+        
+        // Calculer le capital rendu cumulé jusqu'à cette année (incluse) 
+        const capitalRenduCumule = years.slice(0, i).reduce((sum, prevYear) => 
+          sum + (prevYear.capitalRendu || 0), 0
+        );
         
         // Remboursement du capital sur les années 4-7 (25% chaque année)
         let remboursementCapital = 0;
         if (i >= 4 && i <= 7) {
           remboursementCapital = totalActualCashOutEstimate * 0.25;
         }
+        
+        // Ajouter le remboursement de cette année au cumul pour le calcul des coupons
+        const capitalRenduCumuleAvecCetteAnnee = capitalRenduCumule + remboursementCapital;
+        
+        // Coupons = rendement cible * (Capital call cumulé - Capital rendu cumulé)
+        const capitalNetInvesti = Math.max(0, capitalCallCumule - capitalRenduCumuleAvecCetteAnnee);
+        const couponAnnuel = capitalNetInvesti * (data.rendementCible / 100);
         
         // Stocker séparément les coupons et le capital rendu
         year.coupon = couponAnnuel;
