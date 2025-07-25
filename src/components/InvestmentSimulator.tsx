@@ -21,6 +21,8 @@ interface YearlyData {
   annee: number;
   capitalCall: number;
   distribution: number;
+  coupon?: number; // Pour séparer les coupons dans la dette
+  capitalRendu?: number; // Pour séparer le capital rendu dans la dette
   distributionRecyclee: number;
   montantRealDecaisse: number;
   fluxNet: number;
@@ -138,11 +140,10 @@ export default function InvestmentSimulator() {
             year.capitalCall = -montantAppelAnnuel;
           }
         } else if (data.investmentType === 'DEBT') {
-          // Capital call pour la dette selon le modèle du tableau
-          if (i === 1) year.capitalCall = -montantNetInvesti * 0.55; // 55%
-          else if (i === 2) year.capitalCall = -montantNetInvesti * 0.15; // 15%
-          else if (i === 3) year.capitalCall = -montantNetInvesti * 0.20; // 20%
-          else if (i === 4) year.capitalCall = -montantNetInvesti * 0.10; // 10%
+          // Capital call pour la dette : 3 ans d'investissement 35%-35%-30%
+          if (i === 1) year.capitalCall = -montantNetInvesti * 0.35; // 35%
+          else if (i === 2) year.capitalCall = -montantNetInvesti * 0.35; // 35%
+          else if (i === 3) year.capitalCall = -montantNetInvesti * 0.30; // 30%
         } else { // BUYOUT
           if (i <= data.nombreAnnees) {
             year.capitalCall = -montantAppelAnnuel;
@@ -204,11 +205,10 @@ export default function InvestmentSimulator() {
             year.capitalCall = -montantAppelAnnuel;
           }
         } else if (data.investmentType === 'DEBT') {
-          // Capital call pour la dette selon le modèle du tableau
-          if (i === 1) year.capitalCall = -montantNetInvesti * 0.55; // 55%
-          else if (i === 2) year.capitalCall = -montantNetInvesti * 0.15; // 15%
-          else if (i === 3) year.capitalCall = -montantNetInvesti * 0.20; // 20%
-          else if (i === 4) year.capitalCall = -montantNetInvesti * 0.10; // 10%
+          // Capital call pour la dette : 3 ans d'investissement 35%-35%-30%
+          if (i === 1) year.capitalCall = -montantNetInvesti * 0.35; // 35%
+          else if (i === 2) year.capitalCall = -montantNetInvesti * 0.35; // 35%
+          else if (i === 3) year.capitalCall = -montantNetInvesti * 0.30; // 30%
         } else { // BUYOUT
           if (i <= data.nombreAnnees) {
             year.capitalCall = -montantAppelAnnuel;
@@ -219,20 +219,22 @@ export default function InvestmentSimulator() {
       // Distributions selon la stratégie
       if (data.investmentType === 'DEBT') {
         // Logique spéciale pour la dette : coupons + remboursement du capital
-        const capitalCumuléJusquIci = years.slice(0, i).reduce((sum, prevYear) => 
-          sum + Math.abs(prevYear.capitalCall), 0
-        ) + Math.abs(year.capitalCall);
         
-        // Coupons annuels sur le capital déjà appelé
-        const couponAnnuel = capitalCumuléJusquIci * (data.rendementCible / 100);
+        // Coupons de 11% sur le capital appelé la même année
+        let couponAnnuel = 0;
+        if (year.capitalCall < 0) {
+          couponAnnuel = Math.abs(year.capitalCall) * (data.rendementCible / 100);
+        }
         
-        // Remboursement du capital sur les années 5-8
+        // Remboursement du capital sur les années 4-7 (25% chaque année)
         let remboursementCapital = 0;
-        if (i >= 5 && i <= 8) {
-          // Rembourser 25% du capital chaque année sur 4 ans
+        if (i >= 4 && i <= 7) {
           remboursementCapital = totalActualCashOutEstimate * 0.25;
         }
         
+        // Stocker séparément les coupons et le capital rendu
+        year.coupon = couponAnnuel;
+        year.capitalRendu = remboursementCapital;
         year.distribution = couponAnnuel + remboursementCapital;
         
       } else if (data.investmentType === 'VENTURE_CAPITAL') {
@@ -309,8 +311,8 @@ export default function InvestmentSimulator() {
           // Pour le secondaire, valeur future calculée à T6
           anneesRestantes = Math.max(0, 6 - i);
         } else if (data.investmentType === 'DEBT') {
-          // Pour la dette, valeur future calculée à T8 (fin des remboursements)
-          anneesRestantes = Math.max(0, 8 - i);
+          // Pour la dette, valeur future calculée à T7 (7 ans de durée de fonds)
+          anneesRestantes = Math.max(0, 7 - i);
         } else {
           // Pour LBO, VC et Growth Capital, valeur future calculée à T10
           anneesRestantes = 10 - i;
@@ -631,70 +633,92 @@ export default function InvestmentSimulator() {
             <div className="box">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Année</th>
-                      <th className="text-right p-2 flex items-center justify-end gap-1">
-                        Capital Call
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Montant appelé par le fonds chaque année</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </th>
-                      <th className="text-right p-2">Distribution</th>
-                      <th className="text-right p-2">
-                        Distrib. Recyclée
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help ml-1" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>Partie des distributions qui retourne automatiquement dans le fonds pour financer les futurs capital calls, réduisant votre cash réel à décaisser.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </th>
-                      <th className="text-right p-2">Cash Décaissé</th>
-                      <th className="text-right p-2">
-                        Valeur Future
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help ml-1" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>Valeur de la distribution nette réinvestie à 15% annuel jusqu'à l'année 10. Représente la croissance de votre cash libre grâce au réinvestissement.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.map((year, index) => (
-                      <tr key={index} className="border-b border-border hover:bg-muted/50">
-                        <td className="p-2 font-medium">{year.annee}</td>
-                        <td className="text-right p-2 text-red-400">
-                           {year.capitalCall < 0 ? `${Math.round(year.capitalCall).toLocaleString('fr-FR')} €` : '-'}
+                   <thead>
+                     <tr className="border-b">
+                       <th className="text-left p-2">Année</th>
+                       <th className="text-right p-2 flex items-center justify-end gap-1">
+                         Capital Call
+                         <Tooltip>
+                           <TooltipTrigger>
+                             <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                           </TooltipTrigger>
+                           <TooltipContent>
+                             <p>Montant appelé par le fonds chaque année</p>
+                           </TooltipContent>
+                         </Tooltip>
+                       </th>
+                       {data.investmentType === 'DEBT' ? (
+                         <>
+                           <th className="text-right p-2">Coupon</th>
+                           <th className="text-right p-2">Capital Rendu</th>
+                         </>
+                       ) : (
+                         <th className="text-right p-2">Distribution</th>
+                       )}
+                       {data.investmentType !== 'DEBT' && (
+                         <th className="text-right p-2">
+                           Distrib. Recyclée
+                           <Tooltip>
+                             <TooltipTrigger>
+                               <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help ml-1" />
+                             </TooltipTrigger>
+                             <TooltipContent className="max-w-xs">
+                               <p>Partie des distributions qui retourne automatiquement dans le fonds pour financer les futurs capital calls, réduisant votre cash réel à décaisser.</p>
+                             </TooltipContent>
+                           </Tooltip>
+                         </th>
+                       )}
+                       <th className="text-right p-2">Cash Décaissé</th>
+                       <th className="text-right p-2">
+                         Valeur Future
+                         <Tooltip>
+                           <TooltipTrigger>
+                             <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help ml-1" />
+                           </TooltipTrigger>
+                           <TooltipContent className="max-w-xs">
+                             <p>Valeur de la distribution nette réinvestie à 15% annuel jusqu'à l'année 10. Représente la croissance de votre cash libre grâce au réinvestissement.</p>
+                           </TooltipContent>
+                         </Tooltip>
+                       </th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {results.map((year, index) => (
+                       <tr key={index} className="border-b border-border hover:bg-muted/50">
+                         <td className="p-2 font-medium">{year.annee}</td>
+                         <td className="text-right p-2 text-red-400">
+                            {year.capitalCall < 0 ? `${Math.round(year.capitalCall).toLocaleString('fr-FR')} €` : '-'}
+                          </td>
+                          {data.investmentType === 'DEBT' ? (
+                            <>
+                              <td className="text-right p-2 text-green-400">
+                                {(year.coupon && year.coupon > 0) ? `${Math.round(year.coupon).toLocaleString('fr-FR')} €` : '-'}
+                              </td>
+                              <td className="text-right p-2 text-blue-400">
+                                {(year.capitalRendu && year.capitalRendu > 0) ? `${Math.round(year.capitalRendu).toLocaleString('fr-FR')} €` : '-'}
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="text-right p-2 text-green-400">
+                                {year.distribution > 0 ? `${Math.round(year.distribution).toLocaleString('fr-FR')} €` : '-'}
+                              </td>
+                              <td className="text-right p-2 text-blue-400 italic">
+                                {year.distributionRecyclee > 0 ? `${Math.round(year.distributionRecyclee).toLocaleString('fr-FR')} €` : '-'}
+                              </td>
+                            </>
+                          )}
+                          <td className="text-right p-2 font-medium">
+                            <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
+                              {Math.round(year.montantRealDecaisse).toLocaleString('fr-FR')} €
+                            </span>
+                          </td>
+                          <td className="text-right p-2 text-primary">
+                            {year.valeurFuture > 0 ? `${Math.round(year.valeurFuture).toLocaleString('fr-FR')} €` : '-'}
                          </td>
-                         <td className="text-right p-2 text-green-400">
-                           {year.distribution > 0 ? `${Math.round(year.distribution).toLocaleString('fr-FR')} €` : '-'}
-                         </td>
-                         <td className="text-right p-2 text-blue-400 italic">
-                           {year.distributionRecyclee > 0 ? `${Math.round(year.distributionRecyclee).toLocaleString('fr-FR')} €` : '-'}
-                         </td>
-                         <td className="text-right p-2 font-medium">
-                           <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
-                             {Math.round(year.montantRealDecaisse).toLocaleString('fr-FR')} €
-                           </span>
-                         </td>
-                         <td className="text-right p-2 text-primary">
-                           {year.valeurFuture > 0 ? `${Math.round(year.valeurFuture).toLocaleString('fr-FR')} €` : '-'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
+                       </tr>
+                     ))}
+                   </tbody>
                 </table>
               </div>
             </div>
