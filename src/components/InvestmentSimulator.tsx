@@ -12,7 +12,7 @@ interface SimulationData {
   nombreAnnees: number;
   multipleBaseCible: number;
   tauxReinvestissement: number;
-  investmentType: 'lbo' | 'vc' | 'secondaire';
+  investmentType: 'BUYOUT' | 'VENTURE_CAPITAL' | 'SECONDARY' | 'GROWTH_CAPITAL' | 'DEBT';
 }
 
 interface YearlyData {
@@ -31,7 +31,7 @@ export default function InvestmentSimulator() {
     nombreAnnees: 5,
     multipleBaseCible: 2.5,
     tauxReinvestissement: 0.15,
-    investmentType: 'lbo'
+    investmentType: 'BUYOUT'
   });
 
   const [results, setResults] = useState<YearlyData[]>([]);
@@ -76,15 +76,19 @@ export default function InvestmentSimulator() {
     let nombreAnneesDistribution: number;
     let anneeDebutDistribution: number;
     
-    if (data.investmentType === 'vc') {
+    if (data.investmentType === 'VENTURE_CAPITAL') {
       montantAppelAnnuel = montantNetInvesti / 5;
       anneeDebutDistribution = 5;
       nombreAnneesDistribution = 6;
-    } else if (data.investmentType === 'secondaire') {
+    } else if (data.investmentType === 'GROWTH_CAPITAL') {
+      montantAppelAnnuel = montantNetInvesti / 5;
+      anneeDebutDistribution = 4; // distributions commencent en année 4
+      nombreAnneesDistribution = 7; // années 4-10
+    } else if (data.investmentType === 'SECONDARY') {
       montantAppelAnnuel = montantNetInvesti / 2;
       anneeDebutDistribution = 2;
       nombreAnneesDistribution = 5;
-    } else {
+    } else { // BUYOUT
       montantAppelAnnuel = montantNetInvesti / data.nombreAnnees;
       anneeDebutDistribution = 4;
       nombreAnneesDistribution = 7; // années 4-7 (capital) + années 8-10 (profit) = 7 années
@@ -112,15 +116,19 @@ export default function InvestmentSimulator() {
         }
       } else {
         // Logique normale pour les montants >= 30k
-        if (data.investmentType === 'vc') {
+        if (data.investmentType === 'VENTURE_CAPITAL') {
           if (i <= 5) {
             year.capitalCall = -montantAppelAnnuel;
           }
-        } else if (data.investmentType === 'secondaire') {
+        } else if (data.investmentType === 'GROWTH_CAPITAL') {
+          if (i <= 5) {
+            year.capitalCall = -montantAppelAnnuel;
+          }
+        } else if (data.investmentType === 'SECONDARY') {
           if (i <= 2) {
             year.capitalCall = -montantAppelAnnuel;
           }
-        } else {
+        } else { // BUYOUT
           if (i <= data.nombreAnnees) {
             year.capitalCall = -montantAppelAnnuel;
           }
@@ -138,11 +146,13 @@ export default function InvestmentSimulator() {
 
     // Maintenant calculer les vraies distributions basées sur le capital réel décaissé
     let valeurTotaleDistributions: number;
-    if (data.investmentType === 'vc') {
+    if (data.investmentType === 'VENTURE_CAPITAL') {
       valeurTotaleDistributions = totalActualCashOutEstimate * 4; // MOIC de 4
-    } else if (data.investmentType === 'secondaire') {
+    } else if (data.investmentType === 'GROWTH_CAPITAL') {
+      valeurTotaleDistributions = totalActualCashOutEstimate * 3.5; // MOIC de 3.5
+    } else if (data.investmentType === 'SECONDARY') {
       valeurTotaleDistributions = totalActualCashOutEstimate * 2.2; // MOIC de 2.2
-    } else {
+    } else { // BUYOUT
       valeurTotaleDistributions = totalActualCashOutEstimate * 2.5; // MOIC de 2.5
     }
 
@@ -169,15 +179,19 @@ export default function InvestmentSimulator() {
         }
       } else {
         // Logique normale pour les montants >= 30k
-        if (data.investmentType === 'vc') {
+        if (data.investmentType === 'VENTURE_CAPITAL') {
           if (i <= 5) {
             year.capitalCall = -montantAppelAnnuel;
           }
-        } else if (data.investmentType === 'secondaire') {
+        } else if (data.investmentType === 'GROWTH_CAPITAL') {
+          if (i <= 5) {
+            year.capitalCall = -montantAppelAnnuel;
+          }
+        } else if (data.investmentType === 'SECONDARY') {
           if (i <= 2) {
             year.capitalCall = -montantAppelAnnuel;
           }
-        } else {
+        } else { // BUYOUT
           if (i <= data.nombreAnnees) {
             year.capitalCall = -montantAppelAnnuel;
           }
@@ -185,7 +199,7 @@ export default function InvestmentSimulator() {
       }
 
       // Distributions linéaires croissantes pour toutes les stratégies
-      if (data.investmentType === 'vc') {
+      if (data.investmentType === 'VENTURE_CAPITAL') {
         // VC : distributions linéaires croissantes années 5-10
         if (i >= 5 && i <= 10) {
           const anneeDistribution = i - 5 + 1; // 1, 2, 3, 4, 5, 6
@@ -194,7 +208,15 @@ export default function InvestmentSimulator() {
           const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
           year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
         }
-      } else if (data.investmentType === 'secondaire') {
+      } else if (data.investmentType === 'GROWTH_CAPITAL') {
+        // Growth Capital : distributions linéaires croissantes années 4-10 (comme VC mais 1 an plus tôt)
+        if (i >= 4 && i <= 10) {
+          const anneeDistribution = i - 4 + 1; // 1, 2, 3, 4, 5, 6, 7
+          const totalAnneesDistrib = nombreAnneesDistribution; // 7
+          const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
+          year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
+        }
+      } else if (data.investmentType === 'SECONDARY') {
         // Secondaire : distributions linéaires croissantes années 2-6
         if (i >= 2 && i <= 6) {
           const anneeDistribution = i - 2 + 1; // 1, 2, 3, 4, 5
@@ -202,7 +224,7 @@ export default function InvestmentSimulator() {
           const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
           year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
         }
-      } else {
+      } else { // BUYOUT
         // LBO : montant net investi rendu années 4-7 (croissant), puis profit années 8-10 (croissant)
         if (i >= 4 && i <= 7) {
           // Rendre le montant net investi de manière croissante sur 4 années (4, 5, 6, 7)
@@ -242,11 +264,11 @@ export default function InvestmentSimulator() {
       const distributionNette = year.distribution - year.distributionRecyclee;
       if (distributionNette > 0) {
         let anneesRestantes: number;
-        if (data.investmentType === 'secondaire') {
+        if (data.investmentType === 'SECONDARY') {
           // Pour le secondaire, valeur future calculée à T6
           anneesRestantes = Math.max(0, 6 - i);
         } else {
-          // Pour LBO et VC, valeur future calculée à T10
+          // Pour LBO, VC et Growth Capital, valeur future calculée à T10
           anneesRestantes = 10 - i;
         }
         year.valeurFuture = distributionNette * Math.pow(1 + data.tauxReinvestissement, anneesRestantes);
@@ -325,7 +347,7 @@ export default function InvestmentSimulator() {
     }));
   };
 
-  const handleInvestmentTypeChange = (type: 'lbo' | 'vc' | 'secondaire') => {
+  const handleInvestmentTypeChange = (type: 'BUYOUT' | 'VENTURE_CAPITAL' | 'SECONDARY' | 'GROWTH_CAPITAL' | 'DEBT') => {
     setData(prev => ({
       ...prev,
       investmentType: type
@@ -353,42 +375,54 @@ export default function InvestmentSimulator() {
 
                   <div className="space-y-2">
                     <Label>Type d'investissement</Label>
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-4">
                       <div className="flex items-center space-x-2">
                         <input
                           type="radio"
-                          id="lbo"
+                          id="buyout"
                           name="investment-type"
-                          value="lbo"
-                          checked={data.investmentType === 'lbo'}
-                          onChange={() => handleInvestmentTypeChange('lbo')}
+                          value="BUYOUT"
+                          checked={data.investmentType === 'BUYOUT'}
+                          onChange={() => handleInvestmentTypeChange('BUYOUT')}
                           className="w-4 h-4 text-primary border-border focus:ring-primary"
                         />
-                        <Label htmlFor="lbo" className="text-sm">LBO</Label>
+                        <Label htmlFor="buyout" className="text-sm">Buyout</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <input
                           type="radio"
                           id="vc"
                           name="investment-type"
-                          value="vc"
-                          checked={data.investmentType === 'vc'}
-                          onChange={() => handleInvestmentTypeChange('vc')}
+                          value="VENTURE_CAPITAL"
+                          checked={data.investmentType === 'VENTURE_CAPITAL'}
+                          onChange={() => handleInvestmentTypeChange('VENTURE_CAPITAL')}
                           className="w-4 h-4 text-primary border-border focus:ring-primary"
                         />
-                        <Label htmlFor="vc" className="text-sm">VC</Label>
+                        <Label htmlFor="vc" className="text-sm">Venture Capital</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <input
                           type="radio"
-                          id="secondaire"
+                          id="growth"
                           name="investment-type"
-                          value="secondaire"
-                          checked={data.investmentType === 'secondaire'}
-                          onChange={() => handleInvestmentTypeChange('secondaire')}
+                          value="GROWTH_CAPITAL"
+                          checked={data.investmentType === 'GROWTH_CAPITAL'}
+                          onChange={() => handleInvestmentTypeChange('GROWTH_CAPITAL')}
                           className="w-4 h-4 text-primary border-border focus:ring-primary"
                         />
-                        <Label htmlFor="secondaire" className="text-sm">Secondaire</Label>
+                        <Label htmlFor="growth" className="text-sm">Growth Capital</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="secondary"
+                          name="investment-type"
+                          value="SECONDARY"
+                          checked={data.investmentType === 'SECONDARY'}
+                          onChange={() => handleInvestmentTypeChange('SECONDARY')}
+                          className="w-4 h-4 text-primary border-border focus:ring-primary"
+                        />
+                        <Label htmlFor="secondary" className="text-sm">Secondary</Label>
                       </div>
                     </div>
                   </div>
