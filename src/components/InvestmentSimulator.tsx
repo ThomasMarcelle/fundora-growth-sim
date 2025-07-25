@@ -14,6 +14,7 @@ interface SimulationData {
   tauxReinvestissement: number;
   investmentType: 'BUYOUT' | 'VENTURE_CAPITAL' | 'SECONDARY' | 'GROWTH_CAPITAL' | 'DEBT';
   moicCible: number;
+  rendementCible: number; // Pour la dette (en %)
 }
 
 interface YearlyData {
@@ -33,7 +34,8 @@ export default function InvestmentSimulator() {
     multipleBaseCible: 2.5,
     tauxReinvestissement: 0.15,
     investmentType: 'BUYOUT',
-    moicCible: 2.5
+    moicCible: 2.5,
+    rendementCible: 11 // 11% pour la dette
   });
 
   const [results, setResults] = useState<YearlyData[]>([]);
@@ -90,6 +92,11 @@ export default function InvestmentSimulator() {
       montantAppelAnnuel = montantNetInvesti / 2;
       anneeDebutDistribution = 2;
       nombreAnneesDistribution = 5;
+    } else if (data.investmentType === 'DEBT') {
+      // Pour la dette: capital call sur 4 ans avec répartition spécifique
+      montantAppelAnnuel = 0; // sera calculé spécialement
+      anneeDebutDistribution = 1; // coupons dès la première année
+      nombreAnneesDistribution = 8; // coupons sur 8 ans
     } else { // BUYOUT
       montantAppelAnnuel = montantNetInvesti / data.nombreAnnees;
       anneeDebutDistribution = 4;
@@ -130,6 +137,12 @@ export default function InvestmentSimulator() {
           if (i <= 2) {
             year.capitalCall = -montantAppelAnnuel;
           }
+        } else if (data.investmentType === 'DEBT') {
+          // Capital call pour la dette selon le modèle du tableau
+          if (i === 1) year.capitalCall = -montantNetInvesti * 0.55; // 55%
+          else if (i === 2) year.capitalCall = -montantNetInvesti * 0.15; // 15%
+          else if (i === 3) year.capitalCall = -montantNetInvesti * 0.20; // 20%
+          else if (i === 4) year.capitalCall = -montantNetInvesti * 0.10; // 10%
         } else { // BUYOUT
           if (i <= data.nombreAnnees) {
             year.capitalCall = -montantAppelAnnuel;
@@ -147,7 +160,13 @@ export default function InvestmentSimulator() {
     }
 
     // Maintenant calculer les vraies distributions basées sur le capital réel décaissé
-    const valeurTotaleDistributions = totalActualCashOutEstimate * data.moicCible;
+    let valeurTotaleDistributions: number;
+    if (data.investmentType === 'DEBT') {
+      // Pour la dette, pas de MOIC mais rendement annuel + remboursement du capital
+      valeurTotaleDistributions = 0; // sera calculé différemment
+    } else {
+      valeurTotaleDistributions = totalActualCashOutEstimate * data.moicCible;
+    }
 
     // Deuxième passe : calcul final avec les vraies distributions linéaires
     const years: YearlyData[] = [];
@@ -184,6 +203,12 @@ export default function InvestmentSimulator() {
           if (i <= 2) {
             year.capitalCall = -montantAppelAnnuel;
           }
+        } else if (data.investmentType === 'DEBT') {
+          // Capital call pour la dette selon le modèle du tableau
+          if (i === 1) year.capitalCall = -montantNetInvesti * 0.55; // 55%
+          else if (i === 2) year.capitalCall = -montantNetInvesti * 0.15; // 15%
+          else if (i === 3) year.capitalCall = -montantNetInvesti * 0.20; // 20%
+          else if (i === 4) year.capitalCall = -montantNetInvesti * 0.10; // 10%
         } else { // BUYOUT
           if (i <= data.nombreAnnees) {
             year.capitalCall = -montantAppelAnnuel;
@@ -191,8 +216,26 @@ export default function InvestmentSimulator() {
         }
       }
 
-      // Distributions linéaires croissantes pour toutes les stratégies
-      if (data.investmentType === 'VENTURE_CAPITAL') {
+      // Distributions selon la stratégie
+      if (data.investmentType === 'DEBT') {
+        // Logique spéciale pour la dette : coupons + remboursement du capital
+        const capitalCumuléJusquIci = years.slice(0, i).reduce((sum, prevYear) => 
+          sum + Math.abs(prevYear.capitalCall), 0
+        ) + Math.abs(year.capitalCall);
+        
+        // Coupons annuels sur le capital déjà appelé
+        const couponAnnuel = capitalCumuléJusquIci * (data.rendementCible / 100);
+        
+        // Remboursement du capital sur les années 5-8
+        let remboursementCapital = 0;
+        if (i >= 5 && i <= 8) {
+          // Rembourser 25% du capital chaque année sur 4 ans
+          remboursementCapital = totalActualCashOutEstimate * 0.25;
+        }
+        
+        year.distribution = couponAnnuel + remboursementCapital;
+        
+      } else if (data.investmentType === 'VENTURE_CAPITAL') {
         // VC : distributions linéaires croissantes années 5-10
         if (i >= 5 && i <= 10) {
           const anneeDistribution = i - 5 + 1; // 1, 2, 3, 4, 5, 6
@@ -240,13 +283,18 @@ export default function InvestmentSimulator() {
       
       const commitmentRestant = Math.max(0, data.souscription - capitalDejaAppele);
 
-      // Recyclage uniquement quand capital call ET distribution la même année
-      if (year.distribution > 0 && year.capitalCall < 0) {
-        const capitalCallCetteAnnee = Math.abs(year.capitalCall);
-        const recyclageNecessaire = Math.min(year.distribution, capitalCallCetteAnnee);
-        year.distributionRecyclee = recyclageNecessaire;
+      // Pour la dette, pas de recyclage car c'est des coupons + remboursement
+      if (data.investmentType === 'DEBT') {
+        year.distributionRecyclee = 0;
       } else {
-        year.distributionRecyclee = 0; // Pas de recyclage si pas de capital call
+        // Recyclage uniquement quand capital call ET distribution la même année
+        if (year.distribution > 0 && year.capitalCall < 0) {
+          const capitalCallCetteAnnee = Math.abs(year.capitalCall);
+          const recyclageNecessaire = Math.min(year.distribution, capitalCallCetteAnnee);
+          year.distributionRecyclee = recyclageNecessaire;
+        } else {
+          year.distributionRecyclee = 0; // Pas de recyclage si pas de capital call
+        }
       }
 
       // Cash décaissé = capital call + distribution recyclée (mais 0 si pas de capital call)
@@ -260,6 +308,9 @@ export default function InvestmentSimulator() {
         if (data.investmentType === 'SECONDARY') {
           // Pour le secondaire, valeur future calculée à T6
           anneesRestantes = Math.max(0, 6 - i);
+        } else if (data.investmentType === 'DEBT') {
+          // Pour la dette, valeur future calculée à T8 (fin des remboursements)
+          anneesRestantes = Math.max(0, 8 - i);
         } else {
           // Pour LBO, VC et Growth Capital, valeur future calculée à T10
           anneesRestantes = 10 - i;
@@ -343,6 +394,8 @@ export default function InvestmentSimulator() {
   const handleInvestmentTypeChange = (type: 'BUYOUT' | 'VENTURE_CAPITAL' | 'SECONDARY' | 'GROWTH_CAPITAL' | 'DEBT') => {
     // Définir les MOIC par défaut selon le type d'investissement
     let defaultMoic = 2.5;
+    let defaultRendement = 11;
+    
     switch(type) {
       case 'VENTURE_CAPITAL':
         defaultMoic = 4;
@@ -356,6 +409,9 @@ export default function InvestmentSimulator() {
       case 'BUYOUT':
         defaultMoic = 2.5;
         break;
+      case 'DEBT':
+        defaultRendement = 11;
+        break;
       default:
         defaultMoic = 2.5;
     }
@@ -363,7 +419,8 @@ export default function InvestmentSimulator() {
     setData(prev => ({
       ...prev,
       investmentType: type,
-      moicCible: defaultMoic
+      moicCible: defaultMoic,
+      rendementCible: defaultRendement
     }));
   };
 
@@ -437,23 +494,52 @@ export default function InvestmentSimulator() {
                         />
                         <Label htmlFor="secondary" className="text-sm">Secondary</Label>
                       </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="debt"
+                          name="investment-type"
+                          value="DEBT"
+                          checked={data.investmentType === 'DEBT'}
+                          onChange={() => handleInvestmentTypeChange('DEBT')}
+                          className="w-4 h-4 text-primary border-border focus:ring-primary"
+                        />
+                        <Label htmlFor="debt" className="text-sm">Debt</Label>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="moicCible">MOIC Cible</Label>
-                    <Input
-                      id="moicCible"
-                      type="number"
-                      step="0.1"
-                      min="1"
-                      value={data.moicCible}
-                      onChange={(e) => handleInputChange('moicCible', Number(e.target.value))}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Multiple sur le capital investi (ex: 2.5 = +150% de retour)
-                    </p>
-                  </div>
+                  {data.investmentType === 'DEBT' ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="rendementCible">Rendement Cible (%)</Label>
+                      <Input
+                        id="rendementCible"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={data.rendementCible}
+                        onChange={(e) => handleInputChange('rendementCible', Number(e.target.value))}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Rendement annuel en % (ex: 11 pour 11% par an)
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="moicCible">MOIC Cible</Label>
+                      <Input
+                        id="moicCible"
+                        type="number"
+                        step="0.1"
+                        min="1"
+                        value={data.moicCible}
+                        onChange={(e) => handleInputChange('moicCible', Number(e.target.value))}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Multiple sur le capital investi (ex: 2.5 = +150% de retour)
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
