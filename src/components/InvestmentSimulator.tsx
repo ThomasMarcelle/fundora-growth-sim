@@ -251,26 +251,30 @@ export default function InvestmentSimulator() {
       } else if (data.investmentType === 'VENTURE_CAPITAL') {
         // VC : petite distribution en année 5, puis distributions croissantes années 6-10
         if (i === 5) {
-          // Petite distribution en année 5 : 8% du total
-          year.distribution = valeurTotaleDistributions * 0.08;
+          // Petite distribution en année 5 : 8% de la souscription initiale
+          year.distribution = data.souscription * 0.08;
         } else if (i >= 6 && i <= 10) {
-          // Reste (92%) distribué de manière croissante sur années 6-10
+          // Reste distribué de manière croissante sur années 6-10
+          const distribuionAnnee5 = data.souscription * 0.08;
+          const resteADistribuer = valeurTotaleDistributions - distribuionAnnee5;
           const anneeDistribution = i - 6 + 1; // 1, 2, 3, 4, 5
           const totalAnneesDistrib = 5; // 5 années
           const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
-          year.distribution = (valeurTotaleDistributions * 0.92 / totalAnneesDistrib) * facteurCroissance;
+          year.distribution = (resteADistribuer / totalAnneesDistrib) * facteurCroissance;
         }
       } else if (data.investmentType === 'GROWTH_CAPITAL') {
         // Growth Capital : distribution en année 5, puis distributions croissantes années 6-10
         if (i === 5) {
-          // Distribution en année 5 : 15% du total
-          year.distribution = valeurTotaleDistributions * 0.15;
+          // Distribution en année 5 : 15% de la souscription initiale
+          year.distribution = data.souscription * 0.15;
         } else if (i >= 6 && i <= 10) {
-          // Reste (85%) distribué de manière croissante sur années 6-10
+          // Reste distribué de manière croissante sur années 6-10
+          const distribuionAnnee5 = data.souscription * 0.15;
+          const resteADistribuer = valeurTotaleDistributions - distribuionAnnee5;
           const anneeDistribution = i - 6 + 1; // 1, 2, 3, 4, 5
           const totalAnneesDistrib = 5; // 5 années
           const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
-          year.distribution = (valeurTotaleDistributions * 0.85 / totalAnneesDistrib) * facteurCroissance;
+          year.distribution = (resteADistribuer / totalAnneesDistrib) * facteurCroissance;
         }
       } else if (data.investmentType === 'SECONDARY') {
         // Secondaire : distributions linéaires croissantes années 2-6
