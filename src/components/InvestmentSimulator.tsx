@@ -262,7 +262,11 @@ export default function InvestmentSimulator() {
         if (i >= 4 && i <= 10) {
           const anneeDistribution = i - 4 + 1; // 1, 2, 3, 4, 5, 6, 7
           const totalAnneesDistrib = nombreAnneesDistribution; // 7
-          const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
+          let facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
+          // Distribution plus petite en année 4 (anneeDistribution === 1)
+          if (anneeDistribution === 1) {
+            facteurCroissance = facteurCroissance * 0.5; // Réduire la distribution de l'année 4
+          }
           year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
         }
       } else if (data.investmentType === 'SECONDARY') {
@@ -275,7 +279,10 @@ export default function InvestmentSimulator() {
         }
       } else { // BUYOUT
         // LBO : montant net investi rendu années 4-7 (croissant), puis profit années 8-10 (croissant)
-        if (i >= 4 && i <= 7) {
+        if (i === 3) {
+          // Toute petite distribution en année 3
+          year.distribution = montantNetInvesti * 0.05; // 5% du montant net investi
+        } else if (i >= 4 && i <= 7) {
           // Rendre le montant net investi de manière croissante sur 4 années (4, 5, 6, 7)
           const anneeDistribution = i - 4 + 1; // 1, 2, 3, 4
           const facteurCroissance = (2 * anneeDistribution) / (4 + 1); // facteur croissant
