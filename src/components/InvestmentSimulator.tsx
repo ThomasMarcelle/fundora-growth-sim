@@ -88,8 +88,8 @@ export default function InvestmentSimulator() {
       nombreAnneesDistribution = 6;
     } else if (data.investmentType === 'GROWTH_CAPITAL') {
       montantAppelAnnuel = montantNetInvesti / 5;
-      anneeDebutDistribution = 4; // distributions commencent en année 4
-      nombreAnneesDistribution = 7; // années 4-10
+      anneeDebutDistribution = 5; // distributions commencent en année 5
+      nombreAnneesDistribution = 6; // années 5-10
     } else if (data.investmentType === 'SECONDARY') {
       montantAppelAnnuel = montantNetInvesti / 2;
       anneeDebutDistribution = 2;
@@ -258,16 +258,13 @@ export default function InvestmentSimulator() {
           year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
         }
       } else if (data.investmentType === 'GROWTH_CAPITAL') {
-        // Growth Capital : distributions linéaires croissantes années 4-10 (comme VC mais 1 an plus tôt)
-        if (i >= 4 && i <= 10) {
-          const anneeDistribution = i - 4 + 1; // 1, 2, 3, 4, 5, 6, 7
-          const totalAnneesDistrib = nombreAnneesDistribution; // 7
-          let facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
-          // Distribution plus petite en année 4 (anneeDistribution === 1)
-          if (anneeDistribution === 1) {
-            facteurCroissance = facteurCroissance * 0.5; // Réduire la distribution de l'année 4
-          }
-          year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
+        // Growth Capital : distributions années 5-10 (comme VC)
+        if (i >= 5 && i <= 10) {
+          const anneeDistribution = i - 5 + 1; // 1, 2, 3, 4, 5, 6
+          const totalAnneesDistrib = 6; // 6 années de distribution
+          // Distribution croissante comme VC mais un peu plus grosse
+          const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
+          year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance * 1.2; // 20% plus grosse que VC
         }
       } else if (data.investmentType === 'SECONDARY') {
         // Secondaire : distributions linéaires croissantes années 2-6
@@ -277,12 +274,9 @@ export default function InvestmentSimulator() {
           const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
           year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
         }
-      } else { // BUYOUT
-        // LBO : montant net investi rendu années 4-7 (croissant), puis profit années 8-10 (croissant)
-        if (i === 3) {
-          // Toute petite distribution en année 3
-          year.distribution = montantNetInvesti * 0.05; // 5% du montant net investi
-        } else if (i >= 4 && i <= 7) {
+        } else { // BUYOUT
+        // LBO : distributions à partir de l'année 4
+        if (i >= 4 && i <= 7) {
           // Rendre le montant net investi de manière croissante sur 4 années (4, 5, 6, 7)
           const anneeDistribution = i - 4 + 1; // 1, 2, 3, 4
           const facteurCroissance = (2 * anneeDistribution) / (4 + 1); // facteur croissant
