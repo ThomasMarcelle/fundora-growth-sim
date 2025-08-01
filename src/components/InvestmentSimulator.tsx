@@ -258,14 +258,15 @@ export default function InvestmentSimulator() {
           year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
         }
       } else if (data.investmentType === 'GROWTH_CAPITAL') {
-        // Growth Capital : distributions linéaires croissantes années 4-10 (comme VC mais 1 an plus tôt)
+        // Growth Capital : distributions avec croissance plus marquée années 4-10
         if (i >= 4 && i <= 10) {
           const anneeDistribution = i - 4 + 1; // 1, 2, 3, 4, 5, 6, 7
           const totalAnneesDistrib = nombreAnneesDistribution; // 7
-          let facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
+          // Croissance plus marquée avec facteur quadratique
+          let facteurCroissance = Math.pow(anneeDistribution, 2) / Math.pow(totalAnneesDistrib, 2) * totalAnneesDistrib;
           // Distribution plus petite en année 4 (anneeDistribution === 1)
           if (anneeDistribution === 1) {
-            facteurCroissance = facteurCroissance * 0.5; // Réduire la distribution de l'année 4
+            facteurCroissance = facteurCroissance * 0.3; // Encore plus petite en année 4
           }
           year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
         }
