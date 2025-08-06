@@ -263,14 +263,18 @@ export default function InvestmentSimulator() {
           year.distribution = (resteADistribuer / totalAnneesDistrib) * facteurCroissance;
         }
       } else if (data.investmentType === 'GROWTH_CAPITAL') {
-        // Growth Capital : distribution en année 5, puis distributions croissantes années 6-10
-        if (i === 5) {
+        // Growth Capital : toute petite distribution en année 4, distribution en année 5, puis distributions croissantes années 6-10
+        if (i === 4) {
+          // Toute petite distribution en année 4 : 5% de la souscription initiale
+          year.distribution = data.souscription * 0.05;
+        } else if (i === 5) {
           // Distribution en année 5 : 15% de la souscription initiale
           year.distribution = data.souscription * 0.15;
         } else if (i >= 6 && i <= 10) {
           // Reste distribué de manière croissante sur années 6-10
+          const distribuionAnnee4 = data.souscription * 0.05;
           const distribuionAnnee5 = data.souscription * 0.15;
-          const resteADistribuer = valeurTotaleDistributions - distribuionAnnee5;
+          const resteADistribuer = valeurTotaleDistributions - distribuionAnnee4 - distribuionAnnee5;
           const anneeDistribution = i - 6 + 1; // 1, 2, 3, 4, 5
           const totalAnneesDistrib = 5; // 5 années
           const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
@@ -285,14 +289,20 @@ export default function InvestmentSimulator() {
           year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
         }
         } else { // BUYOUT
-        // LBO : distributions à partir de l'année 4
-        if (i >= 4 && i <= 7) {
+        // LBO : toute petite distribution en année 3, puis distributions à partir de l'année 4
+        if (i === 3) {
+          // Toute petite distribution en année 3 : 3% de la souscription initiale
+          year.distribution = data.souscription * 0.03;
+        } else if (i >= 4 && i <= 7) {
           // Rendre le montant net investi de manière croissante sur 4 années (4, 5, 6, 7)
+          const distribuionAnnee3 = data.souscription * 0.03;
+          const montantNetInvestiAjuste = montantNetInvesti - distribuionAnnee3;
           const anneeDistribution = i - 4 + 1; // 1, 2, 3, 4
           const facteurCroissance = (2 * anneeDistribution) / (4 + 1); // facteur croissant
-          year.distribution = (montantNetInvesti / 4) * facteurCroissance;
+          year.distribution = (montantNetInvestiAjuste / 4) * facteurCroissance;
         } else if (i >= 8 && i <= 10) {
           // Profit distribué de manière croissante en 3 années (8, 9, 10)
+          const distribuionAnnee3 = data.souscription * 0.03;
           const profitTotal = valeurTotaleDistributions - montantNetInvesti;
           const anneeDistribution = i - 8 + 1; // 1, 2, 3
           const facteurCroissance = (2 * anneeDistribution) / (3 + 1); // facteur croissant
