@@ -875,6 +875,17 @@ export default function InvestmentSimulator() {
                   })</h3>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Valeur totale de votre investissement avec réinvestissement des distributions dans un fonds {
+                            data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC (4x MOIC)' :
+                            data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital (3.5x MOIC)' : 'LBO (2.5x MOIC)'
+                          }.</p>
+                        </TooltipContent>
+                      </Tooltip>
                       <div className="big-number text-xl font-bold">
                         {Math.round(resultsAvecReinvestissement.valeurFinale).toLocaleString('fr-FR')} €
                       </div>
@@ -882,6 +893,14 @@ export default function InvestmentSimulator() {
                     </div>
 
                     <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Total Value to Paid-In capital avec réinvestissement : ratio entre la valeur finale totale (investissement initial + distributions réinvesties) et le capital réel investi.</p>
+                        </TooltipContent>
+                      </Tooltip>
                       <div className="big-number text-xl font-bold">
                         {Math.round(resultsAvecReinvestissement.moic * 100) / 100}x
                       </div>
@@ -889,6 +908,17 @@ export default function InvestmentSimulator() {
                     </div>
 
                     <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Taux de Rendement Interne annualisé en réinvestissant les distributions dans un fonds {
+                            data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC' :
+                            data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital' : 'LBO'
+                          }.</p>
+                        </TooltipContent>
+                      </Tooltip>
                       <div className="big-number text-xl font-bold">
                         {Math.round(resultsAvecReinvestissement.triAnnuel * 100)}%
                       </div>
@@ -896,6 +926,18 @@ export default function InvestmentSimulator() {
                     </div>
 
                     <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>
+                            {data.profilInvestisseur === 'PERSONNE_PHYSIQUE' 
+                              ? 'Impôts totaux avec flat tax 30% appliquée sur les plus-values des distributions réinvesties' 
+                              : 'IS non calculé pour le moment'}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
                       <div className="big-number text-xl font-bold text-amber-500">
                         {data.profilInvestisseur === 'PERSONNE_PHYSIQUE' 
                           ? `-${Math.round(resultsAvecReinvestissement.impotsTotaux).toLocaleString('fr-FR')} €`
@@ -905,6 +947,14 @@ export default function InvestmentSimulator() {
                     </div>
 
                     <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Total net perçu après impôts et frais, en incluant les gains générés par le réinvestissement des distributions.</p>
+                        </TooltipContent>
+                      </Tooltip>
                       <div className="big-number text-xl font-bold text-green-500">
                         {Math.round(resultsAvecReinvestissement.totalNetPercu).toLocaleString('fr-FR')} €
                       </div>
@@ -912,6 +962,14 @@ export default function InvestmentSimulator() {
                     </div>
 
                     <div className="box relative bg-primary/10">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Gain net supplémentaire généré par le réinvestissement des distributions par rapport au scénario sans réinvestissement.</p>
+                        </TooltipContent>
+                      </Tooltip>
                       <div className="big-number text-xl font-bold text-primary">
                         +{Math.round(resultsAvecReinvestissement.totalNetPercu - finalResults.totalNetPercu).toLocaleString('fr-FR')} €
                       </div>
