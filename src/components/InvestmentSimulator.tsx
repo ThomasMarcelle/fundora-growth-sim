@@ -460,10 +460,10 @@ export default function InvestmentSimulator() {
         const distributionNette = year.distribution - year.distributionRecyclee;
         if (distributionNette > 0) {
           // Nombre d'années jusqu'à la fin
-          // Pour le secondaire dans les redistributions: 6 ans au lieu de 10
-          const anneesRestantes = data.typeReinvestissement === 'BUYOUT' || data.typeReinvestissement === 'GROWTH_CAPITAL' 
-            ? 6 - year.annee  // 6 ans pour secondaire (LBO et Growth)
-            : 10 - year.annee; // 10 ans pour VC
+          // Pour Growth Capital dans les redistributions: 6 ans au lieu de 10
+          const anneesRestantes = data.typeReinvestissement === 'GROWTH_CAPITAL' 
+            ? 6 - year.annee  // 6 ans pour Growth en secondaire
+            : 10 - year.annee; // 10 ans pour LBO et VC
           
           // Valeur future = Valeur initiale × (1 + TRI)^durée
           const valeurFuture = distributionNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
