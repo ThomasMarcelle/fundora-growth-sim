@@ -54,7 +54,7 @@ export default function InvestmentSimulator() {
     capitalRealInvesti: 0,
     valeurFinaleReinvestie: 0,
     moic: 0,
-    triAnnuel: 0,
+    triAnnuelSansReinvest: 0,
     fraisTotaux: 0,
     impotsTotaux: 0,
     totalNetPercu: 0,
@@ -453,10 +453,10 @@ export default function InvestmentSimulator() {
       return r; // Retourne la dernière estimation
     };
 
-    // Préparer les flux de trésorerie (cash décaissé et valeurs futures)
-    const fluxTresorerie = years.map(year => {
-      // Utilise le cash décaissé (négatif) et les valeurs futures (positive)
-      return year.montantRealDecaisse + year.valeurFuture;
+    // Préparer les flux de trésorerie (cash décaissé et distributions sans réinvestissement)
+    const fluxTresorerieSansReinvest = years.map(year => {
+      // Cash décaissé (négatif) et distributions réelles (positives)
+      return year.montantRealDecaisse + (year.distribution - year.distributionRecyclee);
     });
     
     // Calcul des résultats finaux - les frais sont déduits de la valeur finale
@@ -465,7 +465,7 @@ export default function InvestmentSimulator() {
     const valeurFinaleAvecInterets = valeurFinaleAvantFrais + interetsObligatairesTotaux;
     const valeurFinaleReinvestie = valeurFinaleAvecInterets - fraisTotaux;
     const moic = valeurFinaleReinvestie / totalActualCashOut;
-    const triAnnuel = calculateTRI(fluxTresorerie);
+    const triAnnuelSansReinvest = calculateTRI(fluxTresorerieSansReinvest);
 
     // Calcul des impôts - flat tax 30% sur la plus-value uniquement pour personne physique
     let impotsTotaux = 0;
@@ -488,7 +488,7 @@ export default function InvestmentSimulator() {
       capitalRealInvesti: totalActualCashOut,
       valeurFinaleReinvestie,
       moic,
-      triAnnuel,
+      triAnnuelSansReinvest,
       fraisTotaux,
       impotsTotaux,
       totalNetPercu,
@@ -531,8 +531,18 @@ export default function InvestmentSimulator() {
       
       const moicAvecReinvest = valeurTotaleAvecReinvest / totalActualCashOut;
       
-      // TRI simplifié pour le réinvestissement
-      const triAvecReinvest = Math.pow(moicAvecReinvest, 1/10) - 1;
+      // Calcul du TRI avec réinvestissement en utilisant les flux de trésorerie
+      const fluxTresorerieAvecReinvest = years.map(year => {
+        const distributionNette = year.distribution - year.distributionRecyclee;
+        if (distributionNette > 0) {
+          const anneesRestantes = data.dureeReinvestissement - year.annee;
+          const valeurFutureReinvest = distributionNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
+          return year.montantRealDecaisse + valeurFutureReinvest;
+        }
+        return year.montantRealDecaisse;
+      });
+      
+      const triAvecReinvest = calculateTRI(fluxTresorerieAvecReinvest);
       
       setResultsAvecReinvestissement({
         valeurFinale: valeurTotaleAvecReinvest,
@@ -914,20 +924,20 @@ export default function InvestmentSimulator() {
                    <p className="text text-sm mt-1">TVPI</p>
                 </div>
 
-                <div className="box relative">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>Taux de Rendement Interne annualisé de votre investissement sur 10 ans, tenant compte du recyclage des distributions.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <div className="big-number text-xl font-bold">
-                    {Math.round(finalResults.triAnnuel * 100)}%
+                 <div className="box relative">
+                   <Tooltip>
+                     <TooltipTrigger asChild>
+                       <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                     </TooltipTrigger>
+                     <TooltipContent className="max-w-xs">
+                       <p>Taux de Rendement Interne annualisé sans réinvestissement des distributions, tenant compte du recyclage uniquement.</p>
+                     </TooltipContent>
+                   </Tooltip>
+                   <div className="big-number text-xl font-bold">
+                     {Math.round(finalResults.triAnnuelSansReinvest * 100)}%
+                   </div>
+                    <p className="text text-sm mt-1">TRI Annuel</p>
                   </div>
-                   <p className="text text-sm mt-1">TRI Annuel</p>
-                 </div>
 
                  <div className="box relative">
                    <Tooltip>
