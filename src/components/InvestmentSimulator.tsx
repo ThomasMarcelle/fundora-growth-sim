@@ -18,6 +18,7 @@ interface SimulationData {
   profilInvestisseur: 'PERSONNE_PHYSIQUE' | 'PERSONNE_MORALE';
   reinvestirDistributions: boolean;
   typeReinvestissement: 'BUYOUT' | 'VENTURE_CAPITAL' | 'GROWTH_CAPITAL';
+  dureeReinvestissement: number; // Durée pour calculer les réinvestissements
 }
 
 interface YearlyData {
@@ -43,7 +44,8 @@ export default function InvestmentSimulator() {
     rendementCible: 11, // 11% pour la dette
     profilInvestisseur: 'PERSONNE_PHYSIQUE',
     reinvestirDistributions: false,
-    typeReinvestissement: 'BUYOUT'
+    typeReinvestissement: 'BUYOUT',
+    dureeReinvestissement: 10 // Durée par défaut de 10 ans
   });
 
   const [results, setResults] = useState<YearlyData[]>([]);
@@ -459,11 +461,8 @@ export default function InvestmentSimulator() {
       years.forEach(year => {
         const distributionNette = year.distribution - year.distributionRecyclee;
         if (distributionNette > 0) {
-          // Nombre d'années jusqu'à la fin
-          // Pour Growth Capital dans les redistributions: 6 ans au lieu de 10
-          const anneesRestantes = data.typeReinvestissement === 'GROWTH_CAPITAL' 
-            ? 6 - year.annee  // 6 ans pour Growth en secondaire
-            : 10 - year.annee; // 10 ans pour LBO et VC
+          // Nombre d'années jusqu'à la fin de la durée choisie
+          const anneesRestantes = data.dureeReinvestissement - year.annee;
           
           // Valeur future = Valeur initiale × (1 + TRI)^durée
           const valeurFuture = distributionNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
@@ -711,44 +710,61 @@ export default function InvestmentSimulator() {
                       />
                     </div>
                     {data.reinvestirDistributions && (
-                      <div className="space-y-2 pl-4 border-l-2 border-primary/20">
-                        <Label className="text-sm">Type de réinvestissement</Label>
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              id="reinvest-buyout"
-                              name="type-reinvestissement"
-                              value="BUYOUT"
-                              checked={data.typeReinvestissement === 'BUYOUT'}
-                              onChange={() => handleInputChange('typeReinvestissement', 'BUYOUT')}
-                              className="w-4 h-4 text-primary border-border focus:ring-primary"
-                            />
-                            <Label htmlFor="reinvest-buyout" className="text-sm">LBO (2.5x)</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              id="reinvest-vc"
-                              name="type-reinvestissement"
-                              value="VENTURE_CAPITAL"
-                              checked={data.typeReinvestissement === 'VENTURE_CAPITAL'}
-                              onChange={() => handleInputChange('typeReinvestissement', 'VENTURE_CAPITAL')}
-                              className="w-4 h-4 text-primary border-border focus:ring-primary"
-                            />
-                            <Label htmlFor="reinvest-vc" className="text-sm">VC (4x)</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              id="reinvest-growth"
-                              name="type-reinvestissement"
-                              value="GROWTH_CAPITAL"
-                              checked={data.typeReinvestissement === 'GROWTH_CAPITAL'}
-                              onChange={() => handleInputChange('typeReinvestissement', 'GROWTH_CAPITAL')}
-                              className="w-4 h-4 text-primary border-border focus:ring-primary"
-                            />
-                            <Label htmlFor="reinvest-growth" className="text-sm">Growth (3.5x)</Label>
+                      <div className="space-y-4 pl-4 border-l-2 border-primary/20">
+                        <div className="space-y-2">
+                          <Label htmlFor="dureeReinvestissement">Durée d'investissement (années)</Label>
+                          <Input
+                            id="dureeReinvestissement"
+                            type="number"
+                            min="1"
+                            max="20"
+                            value={data.dureeReinvestissement}
+                            onChange={(e) => handleInputChange('dureeReinvestissement', Number(e.target.value))}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Période sur laquelle les distributions seront réinvesties
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm">Type de réinvestissement</Label>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="reinvest-buyout"
+                                name="type-reinvestissement"
+                                value="BUYOUT"
+                                checked={data.typeReinvestissement === 'BUYOUT'}
+                                onChange={() => handleInputChange('typeReinvestissement', 'BUYOUT')}
+                                className="w-4 h-4 text-primary border-border focus:ring-primary"
+                              />
+                              <Label htmlFor="reinvest-buyout" className="text-sm">LBO (TRI 9,6%)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="reinvest-vc"
+                                name="type-reinvestissement"
+                                value="VENTURE_CAPITAL"
+                                checked={data.typeReinvestissement === 'VENTURE_CAPITAL'}
+                                onChange={() => handleInputChange('typeReinvestissement', 'VENTURE_CAPITAL')}
+                                className="w-4 h-4 text-primary border-border focus:ring-primary"
+                              />
+                              <Label htmlFor="reinvest-vc" className="text-sm">VC (TRI 15%)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="reinvest-growth"
+                                name="type-reinvestissement"
+                                value="GROWTH_CAPITAL"
+                                checked={data.typeReinvestissement === 'GROWTH_CAPITAL'}
+                                onChange={() => handleInputChange('typeReinvestissement', 'GROWTH_CAPITAL')}
+                                className="w-4 h-4 text-primary border-border focus:ring-primary"
+                              />
+                              <Label htmlFor="reinvest-growth" className="text-sm">Growth (TRI 13,3%)</Label>
+                            </div>
                           </div>
                         </div>
                       </div>
