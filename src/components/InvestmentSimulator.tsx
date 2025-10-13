@@ -926,21 +926,24 @@ export default function InvestmentSimulator() {
           {/* Tableau en bas */}
           <div className="mt-8">
             <div className="box">
+              <h3 className="text-lg font-semibold mb-4">Détail par année</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                    <thead>
                      <tr className="border-b">
                        <th className="text-left p-2">Année</th>
-                       <th className="text-right p-2 flex items-center justify-end gap-1">
-                         Capital Call
-                         <Tooltip>
-                           <TooltipTrigger>
-                             <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
-                           </TooltipTrigger>
-                           <TooltipContent>
-                             <p>Montant appelé par le fonds chaque année</p>
-                           </TooltipContent>
-                         </Tooltip>
+                       <th className="text-right p-2">
+                         <div className="flex items-center justify-end gap-1">
+                           Capital Call
+                           <Tooltip>
+                             <TooltipTrigger>
+                               <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                             </TooltipTrigger>
+                             <TooltipContent>
+                               <p>Montant appelé par le fonds chaque année</p>
+                             </TooltipContent>
+                           </Tooltip>
+                         </div>
                        </th>
                        {data.investmentType === 'DEBT' ? (
                          <>
@@ -952,67 +955,119 @@ export default function InvestmentSimulator() {
                        )}
                        {data.investmentType !== 'DEBT' && (
                          <th className="text-right p-2">
-                           Distrib. Recyclée
-                           <Tooltip>
-                             <TooltipTrigger>
-                               <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help ml-1" />
-                             </TooltipTrigger>
-                             <TooltipContent className="max-w-xs">
-                               <p>Partie des distributions qui retourne automatiquement dans le fonds pour financer les futurs capital calls, réduisant votre cash réel à décaisser.</p>
-                             </TooltipContent>
-                           </Tooltip>
+                           <div className="flex items-center justify-end gap-1">
+                             Distrib. Recyclée
+                             <Tooltip>
+                               <TooltipTrigger>
+                                 <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                               </TooltipTrigger>
+                               <TooltipContent className="max-w-xs">
+                                 <p>Partie des distributions qui retourne automatiquement dans le fonds pour financer les futurs capital calls, réduisant votre cash réel à décaisser.</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </div>
                          </th>
                        )}
                        <th className="text-right p-2">Cash Décaissé</th>
                        <th className="text-right p-2">
-                         Valeur Future
-                         <Tooltip>
-                           <TooltipTrigger>
-                             <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help ml-1" />
-                           </TooltipTrigger>
-                           <TooltipContent className="max-w-xs">
-                             <p>Valeur de la distribution nette réinvestie à 15% annuel jusqu'à l'année 10. Représente la croissance de votre cash libre grâce au réinvestissement.</p>
-                           </TooltipContent>
-                         </Tooltip>
+                         <div className="flex items-center justify-end gap-1">
+                           Valeur Future
+                           <Tooltip>
+                             <TooltipTrigger>
+                               <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                             </TooltipTrigger>
+                             <TooltipContent className="max-w-xs">
+                               <p>Valeur de la distribution nette réinvestie à 15% annuel jusqu'à l'année 10. Représente la croissance de votre cash libre grâce au réinvestissement.</p>
+                             </TooltipContent>
+                           </Tooltip>
+                         </div>
                        </th>
+                       {data.reinvestirDistributions && (
+                         <>
+                           <th className="text-right p-2 bg-primary/5">
+                             <div className="flex items-center justify-end gap-1">
+                               Distrib. à Réinvestir
+                               <Tooltip>
+                                 <TooltipTrigger>
+                                   <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                                 </TooltipTrigger>
+                                 <TooltipContent className="max-w-xs">
+                                   <p>Montant des distributions disponibles pour réinvestissement dans {data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC' : data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital' : 'LBO'}</p>
+                                 </TooltipContent>
+                               </Tooltip>
+                             </div>
+                           </th>
+                           <th className="text-right p-2 bg-primary/5">
+                             <div className="flex items-center justify-end gap-1">
+                               Valeur Réinvestie
+                               <Tooltip>
+                                 <TooltipTrigger>
+                                   <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                                 </TooltipTrigger>
+                                 <TooltipContent className="max-w-xs">
+                                   <p>Valeur estimée de la distribution réinvestie avec le multiple cible de {data.typeReinvestissement === 'VENTURE_CAPITAL' ? '4x' : data.typeReinvestissement === 'GROWTH_CAPITAL' ? '3.5x' : '2.5x'}</p>
+                                 </TooltipContent>
+                               </Tooltip>
+                             </div>
+                           </th>
+                         </>
+                       )}
                      </tr>
                    </thead>
                    <tbody>
-                     {results.map((year, index) => (
-                       <tr key={index} className="border-b border-border hover:bg-muted/50">
-                         <td className="p-2 font-medium">{year.annee}</td>
-                         <td className="text-right p-2 text-red-400">
-                            {year.capitalCall < 0 ? `${Math.round(year.capitalCall).toLocaleString('fr-FR')} €` : '-'}
-                          </td>
-                          {data.investmentType === 'DEBT' ? (
-                            <>
-                              <td className="text-right p-2 text-green-400">
-                                {(year.coupon && year.coupon > 0) ? `${Math.round(year.coupon).toLocaleString('fr-FR')} €` : '-'}
-                              </td>
-                              <td className="text-right p-2 text-blue-400">
-                                {(year.capitalRendu && year.capitalRendu > 0) ? `${Math.round(year.capitalRendu).toLocaleString('fr-FR')} €` : '-'}
-                              </td>
-                            </>
-                          ) : (
-                            <>
-                              <td className="text-right p-2 text-green-400">
-                                {year.distribution > 0 ? `${Math.round(year.distribution).toLocaleString('fr-FR')} €` : '-'}
-                              </td>
-                              <td className="text-right p-2 text-blue-400 italic">
-                                {year.distributionRecyclee > 0 ? `${Math.round(year.distributionRecyclee).toLocaleString('fr-FR')} €` : '-'}
-                              </td>
-                            </>
-                          )}
-                          <td className="text-right p-2 font-medium">
-                            <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
-                              {Math.round(year.montantRealDecaisse).toLocaleString('fr-FR')} €
-                            </span>
-                          </td>
-                          <td className="text-right p-2 text-primary">
-                            {year.valeurFuture > 0 ? `${Math.round(year.valeurFuture).toLocaleString('fr-FR')} €` : '-'}
-                         </td>
-                       </tr>
-                     ))}
+                     {results.map((year, index) => {
+                       // Calculer les valeurs de réinvestissement pour chaque année
+                       const distributionNette = year.distribution - year.distributionRecyclee;
+                       const moicReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 4 : 
+                                           data.typeReinvestissement === 'GROWTH_CAPITAL' ? 3.5 : 2.5;
+                       const valeurReinvestie = distributionNette * moicReinvest;
+                       
+                       return (
+                         <tr key={index} className="border-b border-border hover:bg-muted/50">
+                           <td className="p-2 font-medium">{year.annee}</td>
+                           <td className="text-right p-2 text-red-400">
+                              {year.capitalCall < 0 ? `${Math.round(year.capitalCall).toLocaleString('fr-FR')} €` : '-'}
+                            </td>
+                            {data.investmentType === 'DEBT' ? (
+                              <>
+                                <td className="text-right p-2 text-green-400">
+                                  {(year.coupon && year.coupon > 0) ? `${Math.round(year.coupon).toLocaleString('fr-FR')} €` : '-'}
+                                </td>
+                                <td className="text-right p-2 text-blue-400">
+                                  {(year.capitalRendu && year.capitalRendu > 0) ? `${Math.round(year.capitalRendu).toLocaleString('fr-FR')} €` : '-'}
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="text-right p-2 text-green-400">
+                                  {year.distribution > 0 ? `${Math.round(year.distribution).toLocaleString('fr-FR')} €` : '-'}
+                                </td>
+                                <td className="text-right p-2 text-blue-400 italic">
+                                  {year.distributionRecyclee > 0 ? `${Math.round(year.distributionRecyclee).toLocaleString('fr-FR')} €` : '-'}
+                                </td>
+                              </>
+                            )}
+                            <td className="text-right p-2 font-medium">
+                              <span className={year.montantRealDecaisse > 0 ? 'text-green-400' : year.montantRealDecaisse < 0 ? 'text-red-400' : ''}>
+                                {Math.round(year.montantRealDecaisse).toLocaleString('fr-FR')} €
+                              </span>
+                            </td>
+                            <td className="text-right p-2 text-primary">
+                              {year.valeurFuture > 0 ? `${Math.round(year.valeurFuture).toLocaleString('fr-FR')} €` : '-'}
+                           </td>
+                           {data.reinvestirDistributions && (
+                             <>
+                               <td className="text-right p-2 bg-primary/5 text-purple-400">
+                                 {distributionNette > 0 ? `${Math.round(distributionNette).toLocaleString('fr-FR')} €` : '-'}
+                               </td>
+                               <td className="text-right p-2 bg-primary/5 text-primary font-medium">
+                                 {valeurReinvestie > 0 ? `${Math.round(valeurReinvestie).toLocaleString('fr-FR')} €` : '-'}
+                               </td>
+                             </>
+                           )}
+                         </tr>
+                       );
+                     })}
                    </tbody>
                 </table>
               </div>
