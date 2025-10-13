@@ -15,6 +15,9 @@ interface SimulationData {
   investmentType: 'BUYOUT' | 'VENTURE_CAPITAL' | 'SECONDARY' | 'GROWTH_CAPITAL' | 'DEBT';
   moicCible: number;
   rendementCible: number; // Pour la dette (en %)
+  profilInvestisseur: 'PERSONNE_PHYSIQUE' | 'PERSONNE_MORALE';
+  reinvestirDistributions: boolean;
+  typeReinvestissement: 'BUYOUT' | 'VENTURE_CAPITAL' | 'GROWTH_CAPITAL';
 }
 
 interface YearlyData {
@@ -37,7 +40,10 @@ export default function InvestmentSimulator() {
     tauxReinvestissement: 0.15,
     investmentType: 'BUYOUT',
     moicCible: 2.5,
-    rendementCible: 11 // 11% pour la dette
+    rendementCible: 11, // 11% pour la dette
+    profilInvestisseur: 'PERSONNE_PHYSIQUE',
+    reinvestirDistributions: false,
+    typeReinvestissement: 'BUYOUT'
   });
 
   const [results, setResults] = useState<YearlyData[]>([]);
@@ -47,7 +53,17 @@ export default function InvestmentSimulator() {
     valeurFinaleReinvestie: 0,
     moic: 0,
     triAnnuel: 0,
-    fraisTotaux: 0
+    fraisTotaux: 0,
+    impotsTotaux: 0,
+    totalNetPercu: 0
+  });
+
+  const [resultsAvecReinvestissement, setResultsAvecReinvestissement] = useState({
+    valeurFinale: 0,
+    moic: 0,
+    triAnnuel: 0,
+    impotsTotaux: 0,
+    totalNetPercu: 0
   });
 
   const calculateSimulation = () => {
@@ -403,6 +419,21 @@ export default function InvestmentSimulator() {
     const moic = valeurFinaleReinvestie / totalActualCashOut;
     const triAnnuel = calculateTRI(fluxTresorerie);
 
+    // Calcul des impôts - flat tax 30% sur la plus-value uniquement pour personne physique
+    let impotsTotaux = 0;
+    let totalNetPercu = 0;
+    
+    if (data.profilInvestisseur === 'PERSONNE_PHYSIQUE') {
+      const capital = totalActualCashOut;
+      const totalDistributions = valeurFinaleReinvestie;
+      const plusValue = Math.max(0, totalDistributions - capital);
+      impotsTotaux = plusValue * 0.30;
+      totalNetPercu = totalDistributions - impotsTotaux;
+    } else {
+      // Personne morale - IS non calculé
+      totalNetPercu = valeurFinaleReinvestie;
+    }
+
     setResults(years);
     setFinalResults({
       capitalTotalRealInvesti: totalCapitalCalled,
@@ -410,15 +441,55 @@ export default function InvestmentSimulator() {
       valeurFinaleReinvestie,
       moic,
       triAnnuel,
-      fraisTotaux
+      fraisTotaux,
+      impotsTotaux,
+      totalNetPercu
     });
+
+    // Calcul avec réinvestissement si activé
+    if (data.reinvestirDistributions) {
+      // Simuler le réinvestissement des distributions dans le type choisi
+      let valeurTotaleAvecReinvest = valeurFinaleReinvestie;
+      
+      // MOIC selon le type de réinvestissement
+      const moicReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 4 : 
+                          data.typeReinvestissement === 'GROWTH_CAPITAL' ? 3.5 : 2.5;
+      
+      // Appliquer le multiple sur la valeur finale (simplifié)
+      valeurTotaleAvecReinvest = valeurFinaleReinvestie * moicReinvest;
+      
+      // Calcul impôts avec réinvestissement
+      let impotsTotauxReinvest = 0;
+      let totalNetPercuReinvest = 0;
+      
+      if (data.profilInvestisseur === 'PERSONNE_PHYSIQUE') {
+        const plusValue = Math.max(0, valeurTotaleAvecReinvest - totalActualCashOut);
+        impotsTotauxReinvest = plusValue * 0.30;
+        totalNetPercuReinvest = valeurTotaleAvecReinvest - impotsTotauxReinvest;
+      } else {
+        totalNetPercuReinvest = valeurTotaleAvecReinvest;
+      }
+      
+      const moicAvecReinvest = valeurTotaleAvecReinvest / totalActualCashOut;
+      
+      // TRI simplifié pour le réinvestissement
+      const triAvecReinvest = Math.pow(moicAvecReinvest, 1/10) - 1;
+      
+      setResultsAvecReinvestissement({
+        valeurFinale: valeurTotaleAvecReinvest,
+        moic: moicAvecReinvest,
+        triAnnuel: triAvecReinvest,
+        impotsTotaux: impotsTotauxReinvest,
+        totalNetPercu: totalNetPercuReinvest
+      });
+    }
   };
 
   useEffect(() => {
     calculateSimulation();
   }, [data]);
 
-  const handleInputChange = (field: keyof SimulationData, value: number | string) => {
+  const handleInputChange = (field: keyof SimulationData, value: number | string | boolean) => {
     setData(prev => ({
       ...prev,
       [field]: value
@@ -574,14 +645,114 @@ export default function InvestmentSimulator() {
                       </p>
                     </div>
                   )}
+
+                  <div className="space-y-2 border-t pt-4">
+                    <Label>Profil investisseur</Label>
+                    <div className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="personne-physique"
+                          name="profil-investisseur"
+                          value="PERSONNE_PHYSIQUE"
+                          checked={data.profilInvestisseur === 'PERSONNE_PHYSIQUE'}
+                          onChange={() => handleInputChange('profilInvestisseur', 'PERSONNE_PHYSIQUE')}
+                          className="w-4 h-4 text-primary border-border focus:ring-primary"
+                        />
+                        <Label htmlFor="personne-physique" className="text-sm">Personne physique</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="personne-morale"
+                          name="profil-investisseur"
+                          value="PERSONNE_MORALE"
+                          checked={data.profilInvestisseur === 'PERSONNE_MORALE'}
+                          onChange={() => handleInputChange('profilInvestisseur', 'PERSONNE_MORALE')}
+                          className="w-4 h-4 text-primary border-border focus:ring-primary"
+                        />
+                        <Label htmlFor="personne-morale" className="text-sm">Personne morale</Label>
+                      </div>
+                    </div>
+                    {data.profilInvestisseur === 'PERSONNE_PHYSIQUE' && (
+                      <p className="text-xs text-muted-foreground">
+                        Flat tax 30% appliquée sur la plus-value uniquement
+                      </p>
+                    )}
+                    {data.profilInvestisseur === 'PERSONNE_MORALE' && (
+                      <p className="text-xs text-amber-500">
+                        IS non calculé pour le moment
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 border-t pt-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="reinvestir">Réinvestir les distributions</Label>
+                      <input
+                        type="checkbox"
+                        id="reinvestir"
+                        checked={data.reinvestirDistributions}
+                        onChange={(e) => handleInputChange('reinvestirDistributions', e.target.checked)}
+                        className="w-4 h-4 text-primary border-border focus:ring-primary rounded"
+                      />
+                    </div>
+                    {data.reinvestirDistributions && (
+                      <div className="space-y-2 pl-4 border-l-2 border-primary/20">
+                        <Label className="text-sm">Type de réinvestissement</Label>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              id="reinvest-buyout"
+                              name="type-reinvestissement"
+                              value="BUYOUT"
+                              checked={data.typeReinvestissement === 'BUYOUT'}
+                              onChange={() => handleInputChange('typeReinvestissement', 'BUYOUT')}
+                              className="w-4 h-4 text-primary border-border focus:ring-primary"
+                            />
+                            <Label htmlFor="reinvest-buyout" className="text-sm">LBO (2.5x)</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              id="reinvest-vc"
+                              name="type-reinvestissement"
+                              value="VENTURE_CAPITAL"
+                              checked={data.typeReinvestissement === 'VENTURE_CAPITAL'}
+                              onChange={() => handleInputChange('typeReinvestissement', 'VENTURE_CAPITAL')}
+                              className="w-4 h-4 text-primary border-border focus:ring-primary"
+                            />
+                            <Label htmlFor="reinvest-vc" className="text-sm">VC (4x)</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              id="reinvest-growth"
+                              name="type-reinvestissement"
+                              value="GROWTH_CAPITAL"
+                              checked={data.typeReinvestissement === 'GROWTH_CAPITAL'}
+                              onChange={() => handleInputChange('typeReinvestissement', 'GROWTH_CAPITAL')}
+                              className="w-4 h-4 text-primary border-border focus:ring-primary"
+                            />
+                            <Label htmlFor="reinvest-growth" className="text-sm">Growth (3.5x)</Label>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Résultats - Colonne de droite */}
             <div className="space-y-6 h-fit">
-              {/* Résultats clés */}
-              <div className="grid grid-cols-3 gap-4">
+              {/* Scénario sans réinvestissement */}
+              <div className="box">
+                <h3 className="text-lg font-semibold mb-4">
+                  {data.reinvestirDistributions ? 'Sans réinvestissement' : 'Résultats'}
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
                 <div className="box relative">
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -654,9 +825,101 @@ export default function InvestmentSimulator() {
                   <div className="big-number text-xl font-bold">
                     {Math.round(finalResults.triAnnuel * 100)}%
                   </div>
-                  <p className="text text-sm mt-1">TRI Annuel</p>
-                </div>
+                   <p className="text text-sm mt-1">TRI Annuel</p>
+                 </div>
+
+                 <div className="box relative">
+                   <Tooltip>
+                     <TooltipTrigger asChild>
+                       <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                     </TooltipTrigger>
+                     <TooltipContent className="max-w-xs">
+                       <p>
+                         {data.profilInvestisseur === 'PERSONNE_PHYSIQUE' 
+                           ? 'Impôts calculés avec flat tax 30% sur la plus-value uniquement' 
+                           : 'IS non calculé pour le moment'}
+                       </p>
+                     </TooltipContent>
+                   </Tooltip>
+                   <div className="big-number text-xl font-bold text-amber-500">
+                     {data.profilInvestisseur === 'PERSONNE_PHYSIQUE' 
+                       ? `-${Math.round(finalResults.impotsTotaux).toLocaleString('fr-FR')} €`
+                       : 'N/A'}
+                   </div>
+                   <p className="text text-sm mt-1">Impôts</p>
+                 </div>
+
+                 <div className="box relative">
+                   <Tooltip>
+                     <TooltipTrigger asChild>
+                       <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                     </TooltipTrigger>
+                     <TooltipContent className="max-w-xs">
+                       <p>Total net perçu après impôts et frais</p>
+                     </TooltipContent>
+                   </Tooltip>
+                   <div className="big-number text-xl font-bold text-green-500">
+                     {Math.round(finalResults.totalNetPercu).toLocaleString('fr-FR')} €
+                   </div>
+                   <p className="text text-sm mt-1">Total net perçu</p>
+                 </div>
+               </div>
               </div>
+
+              {/* Scénario avec réinvestissement */}
+              {data.reinvestirDistributions && (
+                <div className="box">
+                  <h3 className="text-lg font-semibold mb-4">Avec réinvestissement ({
+                    data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC' :
+                    data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth' : 'LBO'
+                  })</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="box relative">
+                      <div className="big-number text-xl font-bold">
+                        {Math.round(resultsAvecReinvestissement.valeurFinale).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Valeur finale</p>
+                    </div>
+
+                    <div className="box relative">
+                      <div className="big-number text-xl font-bold">
+                        {Math.round(resultsAvecReinvestissement.moic * 100) / 100}x
+                      </div>
+                      <p className="text text-sm mt-1">TVPI</p>
+                    </div>
+
+                    <div className="box relative">
+                      <div className="big-number text-xl font-bold">
+                        {Math.round(resultsAvecReinvestissement.triAnnuel * 100)}%
+                      </div>
+                      <p className="text text-sm mt-1">TRI Annuel</p>
+                    </div>
+
+                    <div className="box relative">
+                      <div className="big-number text-xl font-bold text-amber-500">
+                        {data.profilInvestisseur === 'PERSONNE_PHYSIQUE' 
+                          ? `-${Math.round(resultsAvecReinvestissement.impotsTotaux).toLocaleString('fr-FR')} €`
+                          : 'N/A'}
+                      </div>
+                      <p className="text text-sm mt-1">Impôts</p>
+                    </div>
+
+                    <div className="box relative">
+                      <div className="big-number text-xl font-bold text-green-500">
+                        {Math.round(resultsAvecReinvestissement.totalNetPercu).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Total net perçu</p>
+                    </div>
+
+                    <div className="box relative bg-primary/10">
+                      <div className="big-number text-xl font-bold text-primary">
+                        +{Math.round(resultsAvecReinvestissement.totalNetPercu - finalResults.totalNetPercu).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Gain net</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
