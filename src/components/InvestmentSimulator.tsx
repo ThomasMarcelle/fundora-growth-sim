@@ -459,10 +459,14 @@ export default function InvestmentSimulator() {
       years.forEach(year => {
         const distributionNette = year.distribution - year.distributionRecyclee;
         if (distributionNette > 0) {
-          // Nombre d'années jusqu'à la fin (année 10)
-          const anneesRestantes = 10 - year.annee;
+          // Nombre d'années jusqu'à la fin
+          // Pour le secondaire dans les redistributions: 6 ans au lieu de 10
+          const anneesRestantes = data.typeReinvestissement === 'BUYOUT' || data.typeReinvestissement === 'GROWTH_CAPITAL' 
+            ? 6 - year.annee  // 6 ans pour secondaire (LBO et Growth)
+            : 10 - year.annee; // 10 ans pour VC
+          
           // Valeur future = Valeur initiale × (1 + TRI)^durée
-          const valeurFuture = distributionNette * Math.pow(1 + triReinvest, anneesRestantes);
+          const valeurFuture = distributionNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
           valeurTotaleAvecReinvest += valeurFuture;
         }
       });
@@ -813,11 +817,11 @@ export default function InvestmentSimulator() {
                       <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
                     </TooltipTrigger>
                      <TooltipContent className="max-w-xs">
-                       <p>Total Value to Paid-In capital : ratio entre la valeur finale et le capital réel investi. Indique combien de fois votre investissement initial a été multiplié.</p>
+                       <p>Total Value to Paid-In capital : ratio entre la valeur finale et le capital réel investi. Correspond au MOIC cible de la stratégie choisie.</p>
                      </TooltipContent>
                    </Tooltip>
                    <div className="big-number text-xl font-bold">
-                     {Math.round(finalResults.moic * 100) / 100}x
+                     {Math.round(data.moicCible * 100) / 100}x
                    </div>
                    <p className="text text-sm mt-1">TVPI</p>
                 </div>
