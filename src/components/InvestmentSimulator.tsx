@@ -449,14 +449,23 @@ export default function InvestmentSimulator() {
     // Calcul avec réinvestissement si activé
     if (data.reinvestirDistributions) {
       // Simuler le réinvestissement des distributions dans le type choisi
-      let valeurTotaleAvecReinvest = valeurFinaleReinvestie;
+      let valeurTotaleAvecReinvest = 0;
       
-      // MOIC selon le type de réinvestissement
-      const moicReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 4 : 
-                          data.typeReinvestissement === 'GROWTH_CAPITAL' ? 3.5 : 2.5;
+      // TRI selon le type de réinvestissement
+      const triReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 0.15 : 
+                          data.typeReinvestissement === 'GROWTH_CAPITAL' ? 0.133 : 0.096;
       
-      // Appliquer le multiple sur la valeur finale (simplifié)
-      valeurTotaleAvecReinvest = valeurFinaleReinvestie * moicReinvest;
+      // Calculer la valeur de chaque distribution réinvestie avec le TRI composé
+      years.forEach(year => {
+        const distributionNette = year.distribution - year.distributionRecyclee;
+        if (distributionNette > 0) {
+          // Nombre d'années jusqu'à la fin (année 10)
+          const anneesRestantes = 10 - year.annee;
+          // Valeur future = Valeur initiale × (1 + TRI)^durée
+          const valeurFuture = distributionNette * Math.pow(1 + triReinvest, anneesRestantes);
+          valeurTotaleAvecReinvest += valeurFuture;
+        }
+      });
       
       // Calcul impôts avec réinvestissement
       let impotsTotauxReinvest = 0;
@@ -881,8 +890,8 @@ export default function InvestmentSimulator() {
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs">
                           <p>Valeur totale de votre investissement avec réinvestissement des distributions dans un fonds {
-                            data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC (4x MOIC)' :
-                            data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital (3.5x MOIC)' : 'LBO (2.5x MOIC)'
+                            data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC (TRI 15%)' :
+                            data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital (TRI 13,3%)' : 'LBO (TRI 9,6%)'
                           }.</p>
                         </TooltipContent>
                       </Tooltip>
@@ -1062,9 +1071,9 @@ export default function InvestmentSimulator() {
                                  <TooltipTrigger>
                                    <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
                                  </TooltipTrigger>
-                                 <TooltipContent className="max-w-xs">
-                                   <p>Valeur estimée de la distribution réinvestie avec le multiple cible de {data.typeReinvestissement === 'VENTURE_CAPITAL' ? '4x' : data.typeReinvestissement === 'GROWTH_CAPITAL' ? '3.5x' : '2.5x'}</p>
-                                 </TooltipContent>
+                                  <TooltipContent className="max-w-xs">
+                                    <p>Valeur estimée de la distribution réinvestie avec un TRI de {data.typeReinvestissement === 'VENTURE_CAPITAL' ? '15%' : data.typeReinvestissement === 'GROWTH_CAPITAL' ? '13,3%' : '9,6%'} annuel jusqu'à l'année 10</p>
+                                  </TooltipContent>
                                </Tooltip>
                              </div>
                            </th>
@@ -1073,12 +1082,13 @@ export default function InvestmentSimulator() {
                      </tr>
                    </thead>
                    <tbody>
-                     {results.map((year, index) => {
-                       // Calculer les valeurs de réinvestissement pour chaque année
-                       const distributionNette = year.distribution - year.distributionRecyclee;
-                       const moicReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 4 : 
-                                           data.typeReinvestissement === 'GROWTH_CAPITAL' ? 3.5 : 2.5;
-                       const valeurReinvestie = distributionNette * moicReinvest;
+                      {results.map((year, index) => {
+                        // Calculer les valeurs de réinvestissement pour chaque année avec TRI
+                        const distributionNette = year.distribution - year.distributionRecyclee;
+                        const triReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 0.15 : 
+                                            data.typeReinvestissement === 'GROWTH_CAPITAL' ? 0.133 : 0.096;
+                        const anneesRestantes = 10 - year.annee;
+                        const valeurReinvestie = distributionNette * Math.pow(1 + triReinvest, anneesRestantes);
                        
                        return (
                          <tr key={index} className="border-b border-border hover:bg-muted/50">
