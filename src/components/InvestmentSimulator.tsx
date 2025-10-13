@@ -512,32 +512,40 @@ export default function InvestmentSimulator() {
     // Définir les MOIC par défaut selon le type d'investissement
     let defaultMoic = 2.5;
     let defaultRendement = 11;
+    let defaultDureeReinvestissement = 10;
     
     switch(type) {
       case 'VENTURE_CAPITAL':
         defaultMoic = 4;
+        defaultDureeReinvestissement = 10;
         break;
       case 'GROWTH_CAPITAL':
         defaultMoic = 3.5;
+        defaultDureeReinvestissement = 10;
         break;
       case 'SECONDARY':
         defaultMoic = 2.2;
+        defaultDureeReinvestissement = 6;
         break;
       case 'BUYOUT':
         defaultMoic = 2.5;
+        defaultDureeReinvestissement = 10;
         break;
       case 'DEBT':
         defaultRendement = 11;
+        defaultDureeReinvestissement = 10;
         break;
       default:
         defaultMoic = 2.5;
+        defaultDureeReinvestissement = 10;
     }
     
     setData(prev => ({
       ...prev,
       investmentType: type,
       moicCible: defaultMoic,
-      rendementCible: defaultRendement
+      rendementCible: defaultRendement,
+      dureeReinvestissement: defaultDureeReinvestissement
     }));
   };
 
@@ -739,7 +747,7 @@ export default function InvestmentSimulator() {
                                 onChange={() => handleInputChange('typeReinvestissement', 'BUYOUT')}
                                 className="w-4 h-4 text-primary border-border focus:ring-primary"
                               />
-                              <Label htmlFor="reinvest-buyout" className="text-sm">LBO (TRI 9,6%)</Label>
+                              <Label htmlFor="reinvest-buyout" className="text-sm">LBO (2.5x)</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                               <input
@@ -751,7 +759,7 @@ export default function InvestmentSimulator() {
                                 onChange={() => handleInputChange('typeReinvestissement', 'VENTURE_CAPITAL')}
                                 className="w-4 h-4 text-primary border-border focus:ring-primary"
                               />
-                              <Label htmlFor="reinvest-vc" className="text-sm">VC (TRI 15%)</Label>
+                              <Label htmlFor="reinvest-vc" className="text-sm">VC (4x)</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                               <input
@@ -763,7 +771,7 @@ export default function InvestmentSimulator() {
                                 onChange={() => handleInputChange('typeReinvestissement', 'GROWTH_CAPITAL')}
                                 className="w-4 h-4 text-primary border-border focus:ring-primary"
                               />
-                              <Label htmlFor="reinvest-growth" className="text-sm">Growth (TRI 13,3%)</Label>
+                              <Label htmlFor="reinvest-growth" className="text-sm">Growth (3.5x)</Label>
                             </div>
                           </div>
                         </div>
