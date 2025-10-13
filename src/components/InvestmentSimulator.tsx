@@ -57,7 +57,8 @@ export default function InvestmentSimulator() {
     triAnnuel: 0,
     fraisTotaux: 0,
     impotsTotaux: 0,
-    totalNetPercu: 0
+    totalNetPercu: 0,
+    interetsObligataires: 0
   });
 
   const [resultsAvecReinvestissement, setResultsAvecReinvestissement] = useState({
@@ -68,7 +69,7 @@ export default function InvestmentSimulator() {
     totalNetPercu: 0
   });
 
-  const calculateSimulation = () => {
+    const calculateSimulation = () => {
     // Calcul des frais de plateforme selon les tranches
     const calculatePlatformFees = (montant: number, annee: number) => {
       if (montant < 30000) {
@@ -95,6 +96,10 @@ export default function InvestmentSimulator() {
       fraisTotaux += calculatePlatformFees(data.souscription, i);
     }
     const montantNetInvesti = data.souscription; // Tout est investi, frais déduits à la fin
+
+    // Pour les tickets < 30k : calcul des intérêts obligataires à 2% sur le capital non appelé
+    const isSmallTicket = data.souscription < 30000;
+    const tauxObligataire = 0.02; // 2% par an
 
     let montantAppelAnnuel: number;
     let nombreAnneesDistribution: number;
@@ -123,6 +128,34 @@ export default function InvestmentSimulator() {
       nombreAnneesDistribution = 7; // années 4-7 (capital) + années 8-10 (profit) = 7 années
     }
 
+    // Pour les tickets < 30k : calculer le capital total appelé selon la courbe normale
+    // pour savoir ce qui est non appelé et donc placé en obligataire
+    let capitalAppelNormal: number[] = []; // Pour chaque année, le capital appelé cumulé normalement
+    
+    if (isSmallTicket) {
+      let cumulCapitalAppele = 0;
+      for (let i = 1; i <= 10; i++) {
+        let capitalCallAnnuel = 0;
+        
+        if (data.investmentType === 'VENTURE_CAPITAL') {
+          if (i <= 5) capitalCallAnnuel = montantAppelAnnuel;
+        } else if (data.investmentType === 'GROWTH_CAPITAL') {
+          if (i <= 5) capitalCallAnnuel = montantAppelAnnuel;
+        } else if (data.investmentType === 'SECONDARY') {
+          if (i <= 2) capitalCallAnnuel = montantAppelAnnuel;
+        } else if (data.investmentType === 'DEBT') {
+          if (i === 1) capitalCallAnnuel = montantNetInvesti * 0.35;
+          else if (i === 2) capitalCallAnnuel = montantNetInvesti * 0.35;
+          else if (i === 3) capitalCallAnnuel = montantNetInvesti * 0.30;
+        } else { // BUYOUT
+          if (i <= data.nombreAnnees) capitalCallAnnuel = montantAppelAnnuel;
+        }
+        
+        cumulCapitalAppele += capitalCallAnnuel;
+        capitalAppelNormal.push(cumulCapitalAppele);
+      }
+    }
+
     // Première passe : calculer le capital réel décaissé sans distributions
     const firstPassYears: YearlyData[] = [];
     let totalActualCashOutEstimate = 0;
@@ -138,11 +171,12 @@ export default function InvestmentSimulator() {
         valeurFuture: 0
       };
 
-      // Capital call - Pour les montants < 30k, tout en année 1
-      if (data.souscription < 30000) {
+      // Capital call - Pour les montants < 30k, tout versé en année 1 dans le SPV
+      if (isSmallTicket) {
         if (i === 1) {
           year.capitalCall = -montantNetInvesti;
         }
+        // Mais on va comptabiliser les intérêts obligataires sur le capital non encore appelé
       } else {
         // Logique normale pour les montants >= 30k
         if (data.investmentType === 'VENTURE_CAPITAL') {
@@ -191,6 +225,7 @@ export default function InvestmentSimulator() {
     const years: YearlyData[] = [];
     let totalCapitalCalled = 0;
     let totalActualCashOut = 0;
+    let interetsObligatairesTotaux = 0; // Pour les tickets < 30k
 
     for (let i = 1; i <= 10; i++) {
       const year: YearlyData = {
@@ -203,10 +238,19 @@ export default function InvestmentSimulator() {
         valeurFuture: 0
       };
 
-      // Capital call - Pour les montants < 30k, tout en année 1
-      if (data.souscription < 30000) {
+      // Capital call - Pour les montants < 30k, tout versé en année 1 dans le SPV
+      if (isSmallTicket) {
         if (i === 1) {
           year.capitalCall = -montantNetInvesti;
+        }
+        
+        // Calculer les intérêts obligataires sur le capital non encore appelé par le fonds
+        // Le capital non appelé = montant total - capital appelé normalement jusqu'à cette année
+        const capitalNonAppele = montantNetInvesti - (capitalAppelNormal[i-1] || 0);
+        if (capitalNonAppele > 0) {
+          const interetsAnnee = capitalNonAppele * tauxObligataire;
+          interetsObligatairesTotaux += interetsAnnee;
+          // Ces intérêts sont capitalisés et seront consommés en priorité lors des appels
         }
       } else {
         // Logique normale pour les montants >= 30k
@@ -417,7 +461,9 @@ export default function InvestmentSimulator() {
     
     // Calcul des résultats finaux - les frais sont déduits de la valeur finale
     const valeurFinaleAvantFrais = years.reduce((sum, year) => sum + year.valeurFuture, 0);
-    const valeurFinaleReinvestie = valeurFinaleAvantFrais - fraisTotaux;
+    // Pour les tickets < 30k, ajouter les intérêts obligataires à la valeur finale
+    const valeurFinaleAvecInterets = valeurFinaleAvantFrais + interetsObligatairesTotaux;
+    const valeurFinaleReinvestie = valeurFinaleAvecInterets - fraisTotaux;
     const moic = valeurFinaleReinvestie / totalActualCashOut;
     const triAnnuel = calculateTRI(fluxTresorerie);
 
@@ -445,7 +491,8 @@ export default function InvestmentSimulator() {
       triAnnuel,
       fraisTotaux,
       impotsTotaux,
-      totalNetPercu
+      totalNetPercu,
+      interetsObligataires: interetsObligatairesTotaux // Ajouter pour affichage
     });
 
     // Calcul avec réinvestissement si activé
@@ -834,6 +881,23 @@ export default function InvestmentSimulator() {
                   </div>
                   <p className="text text-sm mt-1">Frais totaux</p>
                 </div>
+
+                {data.souscription < 30000 && finalResults.interetsObligataires > 0 && (
+                  <div className="box relative">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Intérêts générés à 2%/an sur le capital placé en support obligataire dans le SPV, en attendant les appels de fonds. Ces intérêts sont capitalisés et consommés en priorité lors des appels.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <div className="big-number text-xl font-bold text-green-500">
+                      +{Math.round(finalResults.interetsObligataires).toLocaleString('fr-FR')} €
+                    </div>
+                    <p className="text text-sm mt-1">Intérêts obligataires (2%)</p>
+                  </div>
+                )}
 
                 <div className="box relative">
                   <Tooltip>
