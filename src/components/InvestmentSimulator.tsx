@@ -19,6 +19,9 @@ interface SimulationData {
   reinvestirDistributions: boolean;
   typeReinvestissement: 'BUYOUT' | 'VENTURE_CAPITAL' | 'GROWTH_CAPITAL' | 'SECONDARY';
   dureeReinvestissement: number; // Durée pour calculer les réinvestissements
+  dureeVieFonds: number; // Durée de vie totale du fonds
+  periodCapitalCalls: number; // Période des capital calls (en années)
+  anneeDebutDistributions: number; // Année de début des distributions
 }
 
 interface YearlyData {
@@ -45,7 +48,10 @@ export default function InvestmentSimulator() {
     profilInvestisseur: 'PERSONNE_PHYSIQUE',
     reinvestirDistributions: false,
     typeReinvestissement: 'BUYOUT',
-    dureeReinvestissement: 10 // Durée par défaut de 10 ans
+    dureeReinvestissement: 10, // Durée par défaut de 10 ans
+    dureeVieFonds: 10, // Durée de vie du fonds par défaut
+    periodCapitalCalls: 5, // Période de capital calls par défaut
+    anneeDebutDistributions: 4 // Année de début des distributions par défaut
   });
 
   const [results, setResults] = useState<YearlyData[]>([]);
@@ -92,7 +98,7 @@ export default function InvestmentSimulator() {
 
     // Calcul des frais totaux (seront déduits à la fin)
     let fraisTotaux = 0;
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= data.dureeVieFonds; i++) {
       fraisTotaux += calculatePlatformFees(data.souscription, i);
     }
     const montantNetInvesti = data.souscription; // Tout est investi, frais déduits à la fin
@@ -101,31 +107,16 @@ export default function InvestmentSimulator() {
     const isSmallTicket = data.souscription < 30000;
     const tauxObligataire = 0.02; // 2% par an
 
-    let montantAppelAnnuel: number;
-    let nombreAnneesDistribution: number;
-    let anneeDebutDistribution: number;
+    // Utiliser les paramètres configurables
+    let montantAppelAnnuel = montantNetInvesti / data.periodCapitalCalls;
+    let nombreAnneesDistribution = data.dureeVieFonds - data.anneeDebutDistributions + 1;
+    let anneeDebutDistribution = data.anneeDebutDistributions;
     
-    if (data.investmentType === 'VENTURE_CAPITAL') {
-      montantAppelAnnuel = montantNetInvesti / 5;
-      anneeDebutDistribution = 5;
-      nombreAnneesDistribution = 6;
-    } else if (data.investmentType === 'GROWTH_CAPITAL') {
-      montantAppelAnnuel = montantNetInvesti / 5;
-      anneeDebutDistribution = 5; // distributions commencent en année 5
-      nombreAnneesDistribution = 6; // années 5-10
-    } else if (data.investmentType === 'SECONDARY') {
-      montantAppelAnnuel = montantNetInvesti / 2;
-      anneeDebutDistribution = 2;
-      nombreAnneesDistribution = 5;
-    } else if (data.investmentType === 'DEBT') {
-      // Pour la dette: capital call sur 4 ans avec répartition spécifique
+    // Pour la dette, on garde la logique spécifique
+    if (data.investmentType === 'DEBT') {
       montantAppelAnnuel = 0; // sera calculé spécialement
       anneeDebutDistribution = 1; // coupons dès la première année
       nombreAnneesDistribution = 8; // coupons sur 8 ans
-    } else { // BUYOUT
-      montantAppelAnnuel = montantNetInvesti / data.nombreAnnees;
-      anneeDebutDistribution = 4;
-      nombreAnneesDistribution = 7; // années 4-7 (capital) + années 8-10 (profit) = 7 années
     }
 
     // Pour les tickets < 30k : calculer le capital total appelé selon la courbe normale
@@ -134,21 +125,15 @@ export default function InvestmentSimulator() {
     
     if (isSmallTicket) {
       let cumulCapitalAppele = 0;
-      for (let i = 1; i <= 10; i++) {
+      for (let i = 1; i <= data.dureeVieFonds; i++) {
         let capitalCallAnnuel = 0;
         
-        if (data.investmentType === 'VENTURE_CAPITAL') {
-          if (i <= 5) capitalCallAnnuel = montantAppelAnnuel;
-        } else if (data.investmentType === 'GROWTH_CAPITAL') {
-          if (i <= 5) capitalCallAnnuel = montantAppelAnnuel;
-        } else if (data.investmentType === 'SECONDARY') {
-          if (i <= 2) capitalCallAnnuel = montantAppelAnnuel;
-        } else if (data.investmentType === 'DEBT') {
+        if (data.investmentType === 'DEBT') {
           if (i === 1) capitalCallAnnuel = montantNetInvesti * 0.35;
           else if (i === 2) capitalCallAnnuel = montantNetInvesti * 0.35;
           else if (i === 3) capitalCallAnnuel = montantNetInvesti * 0.30;
-        } else { // BUYOUT
-          if (i <= data.nombreAnnees) capitalCallAnnuel = montantAppelAnnuel;
+        } else {
+          if (i <= data.periodCapitalCalls) capitalCallAnnuel = montantAppelAnnuel;
         }
         
         cumulCapitalAppele += capitalCallAnnuel;
@@ -160,7 +145,7 @@ export default function InvestmentSimulator() {
     const firstPassYears: YearlyData[] = [];
     let totalActualCashOutEstimate = 0;
     
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= data.dureeVieFonds; i++) {
       const year: YearlyData = {
         annee: i,
         capitalCall: 0,
@@ -179,25 +164,13 @@ export default function InvestmentSimulator() {
         // Mais on va comptabiliser les intérêts obligataires sur le capital non encore appelé
       } else {
         // Logique normale pour les montants >= 30k
-        if (data.investmentType === 'VENTURE_CAPITAL') {
-          if (i <= 5) {
-            year.capitalCall = -montantAppelAnnuel;
-          }
-        } else if (data.investmentType === 'GROWTH_CAPITAL') {
-          if (i <= 5) {
-            year.capitalCall = -montantAppelAnnuel;
-          }
-        } else if (data.investmentType === 'SECONDARY') {
-          if (i <= 2) {
-            year.capitalCall = -montantAppelAnnuel;
-          }
-        } else if (data.investmentType === 'DEBT') {
+        if (data.investmentType === 'DEBT') {
           // Capital call pour la dette : 3 ans d'investissement 35%-35%-30%
           if (i === 1) year.capitalCall = -montantNetInvesti * 0.35; // 35%
           else if (i === 2) year.capitalCall = -montantNetInvesti * 0.35; // 35%
           else if (i === 3) year.capitalCall = -montantNetInvesti * 0.30; // 30%
-        } else { // BUYOUT
-          if (i <= data.nombreAnnees) {
+        } else {
+          if (i <= data.periodCapitalCalls) {
             year.capitalCall = -montantAppelAnnuel;
           }
         }
@@ -227,7 +200,7 @@ export default function InvestmentSimulator() {
     let totalActualCashOut = 0;
     let interetsObligatairesTotaux = 0; // Pour les tickets < 30k
 
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= data.dureeVieFonds; i++) {
       const year: YearlyData = {
         annee: i,
         capitalCall: 0,
@@ -254,25 +227,13 @@ export default function InvestmentSimulator() {
         }
       } else {
         // Logique normale pour les montants >= 30k
-        if (data.investmentType === 'VENTURE_CAPITAL') {
-          if (i <= 5) {
-            year.capitalCall = -montantAppelAnnuel;
-          }
-        } else if (data.investmentType === 'GROWTH_CAPITAL') {
-          if (i <= 5) {
-            year.capitalCall = -montantAppelAnnuel;
-          }
-        } else if (data.investmentType === 'SECONDARY') {
-          if (i <= 2) {
-            year.capitalCall = -montantAppelAnnuel;
-          }
-        } else if (data.investmentType === 'DEBT') {
+        if (data.investmentType === 'DEBT') {
           // Capital call pour la dette : 3 ans d'investissement 35%-35%-30%
           if (i === 1) year.capitalCall = -montantNetInvesti * 0.35; // 35%
           else if (i === 2) year.capitalCall = -montantNetInvesti * 0.35; // 35%
           else if (i === 3) year.capitalCall = -montantNetInvesti * 0.30; // 30%
-        } else { // BUYOUT
-          if (i <= data.nombreAnnees) {
+        } else {
+          if (i <= data.periodCapitalCalls) {
             year.capitalCall = -montantAppelAnnuel;
           }
         }
@@ -310,65 +271,12 @@ export default function InvestmentSimulator() {
         year.capitalRendu = remboursementCapital;
         year.distribution = couponAnnuel + remboursementCapital;
         
-      } else if (data.investmentType === 'VENTURE_CAPITAL') {
-        // VC : petite distribution en année 5, puis distributions croissantes années 6-10
-        if (i === 5) {
-          // Petite distribution en année 5 : 8% de la souscription initiale
-          year.distribution = data.souscription * 0.08;
-        } else if (i >= 6 && i <= 10) {
-          // Reste distribué de manière croissante sur années 6-10
-          const distribuionAnnee5 = data.souscription * 0.08;
-          const resteADistribuer = valeurTotaleDistributions - distribuionAnnee5;
-          const anneeDistribution = i - 6 + 1; // 1, 2, 3, 4, 5
-          const totalAnneesDistrib = 5; // 5 années
-          const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
-          year.distribution = (resteADistribuer / totalAnneesDistrib) * facteurCroissance;
-        }
-      } else if (data.investmentType === 'GROWTH_CAPITAL') {
-        // Growth Capital : toute petite distribution en année 4, distribution en année 5, puis distributions croissantes années 6-10
-        if (i === 4) {
-          // Toute petite distribution en année 4 : 5% de la souscription initiale
-          year.distribution = data.souscription * 0.05;
-        } else if (i === 5) {
-          // Distribution en année 5 : 15% de la souscription initiale
-          year.distribution = data.souscription * 0.15;
-        } else if (i >= 6 && i <= 10) {
-          // Reste distribué de manière croissante sur années 6-10
-          const distribuionAnnee4 = data.souscription * 0.05;
-          const distribuionAnnee5 = data.souscription * 0.15;
-          const resteADistribuer = valeurTotaleDistributions - distribuionAnnee4 - distribuionAnnee5;
-          const anneeDistribution = i - 6 + 1; // 1, 2, 3, 4, 5
-          const totalAnneesDistrib = 5; // 5 années
-          const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
-          year.distribution = (resteADistribuer / totalAnneesDistrib) * facteurCroissance;
-        }
-      } else if (data.investmentType === 'SECONDARY') {
-        // Secondaire : distributions linéaires croissantes années 2-6
-        if (i >= 2 && i <= 6) {
-          const anneeDistribution = i - 2 + 1; // 1, 2, 3, 4, 5
-          const totalAnneesDistrib = nombreAnneesDistribution; // 5
-          const facteurCroissance = (2 * anneeDistribution) / (totalAnneesDistrib + 1);
-          year.distribution = (valeurTotaleDistributions / totalAnneesDistrib) * facteurCroissance;
-        }
-        } else { // BUYOUT
-        // LBO : toute petite distribution en année 3, puis distributions à partir de l'année 4
-        if (i === 3) {
-          // Toute petite distribution en année 3 : 3% de la souscription initiale
-          year.distribution = data.souscription * 0.03;
-        } else if (i >= 4 && i <= 7) {
-          // Rendre le montant net investi de manière croissante sur 4 années (4, 5, 6, 7)
-          const distribuionAnnee3 = data.souscription * 0.03;
-          const montantNetInvestiAjuste = montantNetInvesti - distribuionAnnee3;
-          const anneeDistribution = i - 4 + 1; // 1, 2, 3, 4
-          const facteurCroissance = (2 * anneeDistribution) / (4 + 1); // facteur croissant
-          year.distribution = (montantNetInvestiAjuste / 4) * facteurCroissance;
-        } else if (i >= 8 && i <= 10) {
-          // Profit distribué de manière croissante en 3 années (8, 9, 10)
-          const distribuionAnnee3 = data.souscription * 0.03;
-          const profitTotal = valeurTotaleDistributions - montantNetInvesti;
-          const anneeDistribution = i - 8 + 1; // 1, 2, 3
-          const facteurCroissance = (2 * anneeDistribution) / (3 + 1); // facteur croissant
-          year.distribution = (profitTotal / 3) * facteurCroissance;
+      } else {
+        // Distributions selon les paramètres configurables
+        if (i >= data.anneeDebutDistributions) {
+          const anneeDistribution = i - data.anneeDebutDistributions + 1;
+          const facteurCroissance = (2 * anneeDistribution) / (nombreAnneesDistribution + 1);
+          year.distribution = (valeurTotaleDistributions / nombreAnneesDistribution) * facteurCroissance;
         }
       }
 
@@ -408,8 +316,8 @@ export default function InvestmentSimulator() {
           // Pour la dette, valeur future calculée à T7 (7 ans de durée de fonds)
           anneesRestantes = Math.max(0, 7 - i);
         } else {
-          // Pour LBO, VC et Growth Capital, valeur future calculée à T10
-          anneesRestantes = 10 - i;
+          // Pour les autres types, valeur future calculée à la durée de vie du fonds
+          anneesRestantes = Math.max(0, data.dureeVieFonds - i);
         }
         year.valeurFuture = distributionNette * Math.pow(1 + data.tauxReinvestissement, anneesRestantes);
       }
@@ -675,7 +583,7 @@ export default function InvestmentSimulator() {
                           onChange={() => handleInvestmentTypeChange('SECONDARY')}
                           className="w-4 h-4 text-primary border-border focus:ring-primary"
                         />
-                        <Label htmlFor="secondary" className="text-sm">Secondary</Label>
+                        <Label htmlFor="secondary" className="text-sm">Secondaire</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <input
@@ -722,6 +630,55 @@ export default function InvestmentSimulator() {
                         Multiple sur le capital investi (ex: 2.5 = +150% de retour)
                       </p>
                     </div>
+                  )}
+
+                  {data.investmentType !== 'DEBT' && (
+                    <>
+                      <div className="space-y-2 border-t pt-4">
+                        <Label htmlFor="dureeVieFonds">Durée de vie du fonds (années)</Label>
+                        <Input
+                          id="dureeVieFonds"
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={data.dureeVieFonds}
+                          onChange={(e) => handleInputChange('dureeVieFonds', Number(e.target.value))}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Durée totale du fonds
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="periodCapitalCalls">Période de capital calls (années)</Label>
+                        <Input
+                          id="periodCapitalCalls"
+                          type="number"
+                          min="1"
+                          max={data.dureeVieFonds}
+                          value={data.periodCapitalCalls}
+                          onChange={(e) => handleInputChange('periodCapitalCalls', Number(e.target.value))}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Nombre d'années sur lesquelles le capital sera appelé
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="anneeDebutDistributions">Début des redistributions (année)</Label>
+                        <Input
+                          id="anneeDebutDistributions"
+                          type="number"
+                          min="1"
+                          max={data.dureeVieFonds}
+                          value={data.anneeDebutDistributions}
+                          onChange={(e) => handleInputChange('anneeDebutDistributions', Number(e.target.value))}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          À partir de quelle année les distributions commencent
+                        </p>
+                      </div>
+                    </>
                   )}
 
                   <div className="space-y-2 border-t pt-4">
@@ -1150,60 +1107,63 @@ export default function InvestmentSimulator() {
                            </div>
                          </th>
                        )}
-                       <th className="text-right p-2">Cash Décaissé</th>
-                       <th className="text-right p-2">
-                         <div className="flex items-center justify-end gap-1">
-                           Valeur Future
-                           <Tooltip>
-                             <TooltipTrigger>
-                               <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
-                             </TooltipTrigger>
-                             <TooltipContent className="max-w-xs">
-                               <p>Valeur de la distribution nette réinvestie à 15% annuel jusqu'à l'année 10. Représente la croissance de votre cash libre grâce au réinvestissement.</p>
-                             </TooltipContent>
-                           </Tooltip>
-                         </div>
-                       </th>
-                       {data.reinvestirDistributions && (
-                         <>
-                           <th className="text-right p-2 bg-primary/5">
-                             <div className="flex items-center justify-end gap-1">
-                               Distrib. à Réinvestir
-                               <Tooltip>
-                                 <TooltipTrigger>
-                                   <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
-                                 </TooltipTrigger>
-                                 <TooltipContent className="max-w-xs">
-                                   <p>Montant des distributions disponibles pour réinvestissement dans {data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC' : data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital' : 'LBO'}</p>
-                                 </TooltipContent>
-                               </Tooltip>
-                             </div>
-                           </th>
-                           <th className="text-right p-2 bg-primary/5">
-                             <div className="flex items-center justify-end gap-1">
-                               Valeur Réinvestie
-                               <Tooltip>
-                                 <TooltipTrigger>
-                                   <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
-                                 </TooltipTrigger>
+                        <th className="text-right p-2">Cash Décaissé</th>
+                        {!data.reinvestirDistributions && (
+                          <th className="text-right p-2">
+                            <div className="flex items-center justify-end gap-1">
+                              Valeur Future
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Valeur de la distribution nette réinvestie à 15% annuel jusqu'à l'année 10. Représente la croissance de votre cash libre grâce au réinvestissement.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </th>
+                        )}
+                        {data.reinvestirDistributions && (
+                          <>
+                            <th className="text-right p-2 bg-primary/5">
+                              <div className="flex items-center justify-end gap-1">
+                                Distrib. à Réinvestir
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                                  </TooltipTrigger>
                                   <TooltipContent className="max-w-xs">
-                                    <p>Valeur estimée de la distribution réinvestie avec un TRI de {data.typeReinvestissement === 'VENTURE_CAPITAL' ? '15%' : data.typeReinvestissement === 'GROWTH_CAPITAL' ? '13,3%' : '9,6%'} annuel jusqu'à l'année 10</p>
+                                    <p>Montant des distributions disponibles pour réinvestissement dans {data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC' : data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital' : data.typeReinvestissement === 'SECONDARY' ? 'Secondaire' : 'LBO'}</p>
                                   </TooltipContent>
-                               </Tooltip>
-                             </div>
-                           </th>
-                         </>
-                       )}
-                     </tr>
+                                </Tooltip>
+                              </div>
+                            </th>
+                            <th className="text-right p-2 bg-primary/5">
+                              <div className="flex items-center justify-end gap-1">
+                                Valeur Réinvestie
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                                  </TooltipTrigger>
+                                   <TooltipContent className="max-w-xs">
+                                     <p>Valeur estimée de la distribution réinvestie avec un TRI de {data.typeReinvestissement === 'VENTURE_CAPITAL' ? '15%' : data.typeReinvestissement === 'GROWTH_CAPITAL' ? '13,3%' : data.typeReinvestissement === 'SECONDARY' ? '8,2%' : '9,6%'} annuel jusqu'à l'année {data.dureeReinvestissement}</p>
+                                   </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </th>
+                          </>
+                        )}
+                      </tr>
                    </thead>
                    <tbody>
                       {results.map((year, index) => {
                         // Calculer les valeurs de réinvestissement pour chaque année avec TRI
                         const distributionNette = year.distribution - year.distributionRecyclee;
                         const triReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 0.15 : 
-                                            data.typeReinvestissement === 'GROWTH_CAPITAL' ? 0.133 : 0.096;
-                        const anneesRestantes = 10 - year.annee;
-                        const valeurReinvestie = distributionNette * Math.pow(1 + triReinvest, anneesRestantes);
+                                            data.typeReinvestissement === 'GROWTH_CAPITAL' ? 0.133 :
+                                            data.typeReinvestissement === 'SECONDARY' ? 0.082 : 0.096;
+                        const anneesRestantes = data.dureeReinvestissement - year.annee;
+                        const valeurReinvestie = distributionNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
                        
                        return (
                          <tr key={index} className="border-b border-border hover:bg-muted/50">
@@ -1235,9 +1195,11 @@ export default function InvestmentSimulator() {
                                 {Math.round(year.montantRealDecaisse).toLocaleString('fr-FR')} €
                               </span>
                             </td>
-                            <td className="text-right p-2 text-primary">
-                              {year.valeurFuture > 0 ? `${Math.round(year.valeurFuture).toLocaleString('fr-FR')} €` : '-'}
-                           </td>
+                            {!data.reinvestirDistributions && (
+                              <td className="text-right p-2 text-primary">
+                                {year.valeurFuture > 0 ? `${Math.round(year.valeurFuture).toLocaleString('fr-FR')} €` : '-'}
+                              </td>
+                            )}
                            {data.reinvestirDistributions && (
                              <>
                                <td className="text-right p-2 bg-primary/5 text-purple-400">
