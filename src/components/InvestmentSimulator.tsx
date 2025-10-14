@@ -17,7 +17,7 @@ interface SimulationData {
   rendementCible: number; // Pour la dette (en %)
   profilInvestisseur: 'PERSONNE_PHYSIQUE' | 'PERSONNE_MORALE';
   reinvestirDistributions: boolean;
-  typeReinvestissement: 'BUYOUT' | 'VENTURE_CAPITAL' | 'GROWTH_CAPITAL';
+  typeReinvestissement: 'BUYOUT' | 'VENTURE_CAPITAL' | 'GROWTH_CAPITAL' | 'SECONDARY';
   dureeReinvestissement: number; // Durée pour calculer les réinvestissements
 }
 
@@ -502,7 +502,8 @@ export default function InvestmentSimulator() {
       
       // TRI selon le type de réinvestissement
       const triReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 0.15 : 
-                          data.typeReinvestissement === 'GROWTH_CAPITAL' ? 0.133 : 0.096;
+                          data.typeReinvestissement === 'GROWTH_CAPITAL' ? 0.133 :
+                          data.typeReinvestissement === 'SECONDARY' ? 0.082 : 0.096;
       
       // Calculer la valeur de chaque distribution réinvestie avec le TRI composé
       years.forEach(year => {
@@ -829,6 +830,18 @@ export default function InvestmentSimulator() {
                                 className="w-4 h-4 text-primary border-border focus:ring-primary"
                               />
                               <Label htmlFor="reinvest-growth" className="text-sm">Growth (3.5x)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="reinvest-secondary"
+                                name="type-reinvestissement"
+                                value="SECONDARY"
+                                checked={data.typeReinvestissement === 'SECONDARY'}
+                                onChange={() => handleInputChange('typeReinvestissement', 'SECONDARY')}
+                                className="w-4 h-4 text-primary border-border focus:ring-primary"
+                              />
+                              <Label htmlFor="reinvest-secondary" className="text-sm">Secondaire (2.2x)</Label>
                             </div>
                           </div>
                         </div>
