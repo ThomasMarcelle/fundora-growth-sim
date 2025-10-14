@@ -18,7 +18,6 @@ interface SimulationData {
   profilInvestisseur: 'PERSONNE_PHYSIQUE' | 'PERSONNE_MORALE';
   reinvestirDistributions: boolean;
   typeReinvestissement: 'BUYOUT' | 'VENTURE_CAPITAL' | 'GROWTH_CAPITAL' | 'SECONDARY';
-  dureeReinvestissement: number; // Durée pour calculer les réinvestissements
   dureeVieFonds: number; // Durée de vie totale du fonds
   periodCapitalCalls: number; // Période des capital calls (en années)
   anneeDebutDistributions: number; // Année de début des distributions
@@ -48,7 +47,6 @@ export default function InvestmentSimulator() {
     profilInvestisseur: 'PERSONNE_PHYSIQUE',
     reinvestirDistributions: false,
     typeReinvestissement: 'BUYOUT',
-    dureeReinvestissement: 10, // Durée par défaut de 10 ans
     dureeVieFonds: 10, // Durée de vie du fonds par défaut
     periodCapitalCalls: 5, // Période de capital calls par défaut
     anneeDebutDistributions: 4 // Année de début des distributions par défaut
@@ -417,8 +415,8 @@ export default function InvestmentSimulator() {
       years.forEach(year => {
         const distributionNette = year.distribution - year.distributionRecyclee;
         if (distributionNette > 0) {
-          // Nombre d'années jusqu'à la fin de la durée choisie
-          const anneesRestantes = data.dureeReinvestissement - year.annee;
+          // Nombre d'années jusqu'à la fin du fonds de base (dureeVieFonds)
+          const anneesRestantes = data.dureeVieFonds - year.annee;
           
           // Valeur future = Valeur initiale × (1 + TRI)^durée
           const valeurFuture = distributionNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
@@ -444,7 +442,7 @@ export default function InvestmentSimulator() {
       const fluxTresorerieAvecReinvest = years.map(year => {
         const distributionNette = year.distribution - year.distributionRecyclee;
         if (distributionNette > 0) {
-          const anneesRestantes = data.dureeReinvestissement - year.annee;
+          const anneesRestantes = data.dureeVieFonds - year.annee;
           const valeurFutureReinvest = distributionNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
           return year.montantRealDecaisse + valeurFutureReinvest;
         }
@@ -478,40 +476,32 @@ export default function InvestmentSimulator() {
     // Définir les MOIC par défaut selon le type d'investissement
     let defaultMoic = 2.5;
     let defaultRendement = 11;
-    let defaultDureeReinvestissement = 10;
     
     switch(type) {
       case 'VENTURE_CAPITAL':
         defaultMoic = 4;
-        defaultDureeReinvestissement = 10;
         break;
       case 'GROWTH_CAPITAL':
         defaultMoic = 3.5;
-        defaultDureeReinvestissement = 10;
         break;
       case 'SECONDARY':
         defaultMoic = 2.2;
-        defaultDureeReinvestissement = 6;
         break;
       case 'BUYOUT':
         defaultMoic = 2.5;
-        defaultDureeReinvestissement = 10;
         break;
       case 'DEBT':
         defaultRendement = 11;
-        defaultDureeReinvestissement = 10;
         break;
       default:
         defaultMoic = 2.5;
-        defaultDureeReinvestissement = 10;
     }
     
     setData(prev => ({
       ...prev,
       investmentType: type,
       moicCible: defaultMoic,
-      rendementCible: defaultRendement,
-      dureeReinvestissement: defaultDureeReinvestissement
+      rendementCible: defaultRendement
     }));
   };
 
@@ -734,20 +724,9 @@ export default function InvestmentSimulator() {
                     </div>
                     {data.reinvestirDistributions && (
                       <div className="space-y-4 pl-4 border-l-2 border-primary/20">
-                        <div className="space-y-2">
-                          <Label htmlFor="dureeReinvestissement">Durée d'investissement (années)</Label>
-                          <Input
-                            id="dureeReinvestissement"
-                            type="number"
-                            min="1"
-                            max="20"
-                            value={data.dureeReinvestissement}
-                            onChange={(e) => handleInputChange('dureeReinvestissement', Number(e.target.value))}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Période sur laquelle les distributions seront réinvesties
-                          </p>
-                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Les distributions seront réinvesties jusqu'à la fin de vie du fonds ({data.dureeVieFonds} ans)
+                        </p>
                         
                         <div className="space-y-2">
                           <Label className="text-sm">Type de réinvestissement</Label>
@@ -1146,7 +1125,7 @@ export default function InvestmentSimulator() {
                                     <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
                                   </TooltipTrigger>
                                    <TooltipContent className="max-w-xs">
-                                     <p>Valeur estimée de la distribution réinvestie avec un TRI de {data.typeReinvestissement === 'VENTURE_CAPITAL' ? '15%' : data.typeReinvestissement === 'GROWTH_CAPITAL' ? '13,3%' : data.typeReinvestissement === 'SECONDARY' ? '8,2%' : '9,6%'} annuel jusqu'à l'année {data.dureeReinvestissement}</p>
+                                     <p>Valeur estimée de la distribution réinvestie avec un TRI de {data.typeReinvestissement === 'VENTURE_CAPITAL' ? '15%' : data.typeReinvestissement === 'GROWTH_CAPITAL' ? '13,3%' : data.typeReinvestissement === 'SECONDARY' ? '8,2%' : '9,6%'} annuel jusqu'à la fin du fonds (année {data.dureeVieFonds})</p>
                                    </TooltipContent>
                                 </Tooltip>
                               </div>
@@ -1162,7 +1141,7 @@ export default function InvestmentSimulator() {
                         const triReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 0.15 : 
                                             data.typeReinvestissement === 'GROWTH_CAPITAL' ? 0.133 :
                                             data.typeReinvestissement === 'SECONDARY' ? 0.082 : 0.096;
-                        const anneesRestantes = data.dureeReinvestissement - year.annee;
+                        const anneesRestantes = data.dureeVieFonds - year.annee;
                         const valeurReinvestie = distributionNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
                        
                        return (
