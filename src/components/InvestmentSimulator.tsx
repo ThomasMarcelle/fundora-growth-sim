@@ -400,10 +400,25 @@ export default function InvestmentSimulator() {
   }, [data]);
 
   const handleInputChange = (field: keyof SimulationData, value: number | string | boolean) => {
-    setData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+      
+      // Si la souscription change et est < 30 000€, mettre automatiquement 100% en année 1
+      if (field === 'souscription' && typeof value === 'number' && value < 30000) {
+        const newCapitalCalls = [...prev.capitalCallsParAnnee];
+        newCapitalCalls[0] = 100; // 100% en première année
+        // Mettre les autres années à 0
+        for (let i = 1; i < newCapitalCalls.length; i++) {
+          newCapitalCalls[i] = 0;
+        }
+        newData.capitalCallsParAnnee = newCapitalCalls;
+      }
+      
+      return newData;
+    });
   };
 
   const handleInvestmentTypeChange = (type: 'BUYOUT' | 'VENTURE_CAPITAL' | 'SECONDARY' | 'GROWTH_CAPITAL' | 'DEBT') => {
