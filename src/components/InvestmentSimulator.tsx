@@ -764,148 +764,147 @@ export default function InvestmentSimulator() {
 
             {/* Résultats - Colonne de droite */}
             <div className="space-y-6 h-fit">
-              {/* Scénario sans réinvestissement */}
-              <div className="box">
-                <h3 className="text-lg font-semibold mb-4">
-                  {data.reinvestirDistributions ? 'Sans réinvestissement' : 'Résultats'}
-                </h3>
-                <div className="grid grid-cols-3 gap-4">
-                <div className="box relative">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>Montant réellement décaissé de votre poche. Grâce au recyclage des distributions, ce montant est inférieur à votre souscription initiale car une partie des distributions retournent dans le fonds.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <div className="big-number text-xl font-bold">
-                    {Math.round(finalResults.capitalRealInvesti).toLocaleString('fr-FR')} €
-                  </div>
-                  <p className="text text-sm mt-1">Capital réel investi</p>
-                </div>
-
-                <div className="box relative">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>Valeur totale de votre investissement à la fin de la période, incluant le réinvestissement des distributions nettes au taux de 15% annuel, après déduction des frais totaux.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <div className="big-number text-xl font-bold">
-                    {Math.round(finalResults.valeurFinaleReinvestie).toLocaleString('fr-FR')} €
-                  </div>
-                  <p className="text text-sm mt-1">Valeur finale</p>
-                </div>
-
-                <div className="box relative">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>Frais totaux de la plateforme sur 10 ans, déduits de la valeur finale. Comprend les frais d'entrée et les frais annuels de gestion.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <div className="big-number text-xl font-bold text-destructive">
-                    -{Math.round(finalResults.fraisTotaux).toLocaleString('fr-FR')} €
-                  </div>
-                  <p className="text text-sm mt-1">Frais totaux</p>
-                </div>
-
-                {data.souscription < 30000 && finalResults.interetsObligataires > 0 && (
-                  <div className="box relative">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>Intérêts générés à 2%/an sur le capital placé en support obligataire dans le SPV, en attendant les appels de fonds. Ces intérêts sont capitalisés et consommés en priorité lors des appels.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <div className="big-number text-xl font-bold text-green-500">
-                      +{Math.round(finalResults.interetsObligataires).toLocaleString('fr-FR')} €
-                    </div>
-                    <p className="text text-sm mt-1">Intérêts obligataires (2%)</p>
-                  </div>
-                )}
-
-                <div className="box relative">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
-                    </TooltipTrigger>
-                     <TooltipContent className="max-w-xs">
-                       <p>Total Value to Paid-In capital : ratio entre la valeur finale et le capital réel investi. Correspond au MOIC cible de la stratégie choisie.</p>
-                     </TooltipContent>
-                   </Tooltip>
-                   <div className="big-number text-xl font-bold">
-                     {Math.round(data.moicCible * 100) / 100}x
-                   </div>
-                   <p className="text text-sm mt-1">TVPI</p>
-                </div>
-
-                 <div className="box relative">
-                   <Tooltip>
-                     <TooltipTrigger asChild>
-                       <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
-                     </TooltipTrigger>
-                     <TooltipContent className="max-w-xs">
-                       <p>Taux de Rendement Interne annualisé sans réinvestissement des distributions, tenant compte du recyclage uniquement.</p>
-                     </TooltipContent>
-                   </Tooltip>
-                   <div className="big-number text-xl font-bold">
-                     {(finalResults.triAnnuelSansReinvest * 100).toFixed(2)}%
-                   </div>
-                    <p className="text text-sm mt-1">TRI Annuel</p>
-                  </div>
-
-                 <div className="box relative">
-                   <Tooltip>
-                     <TooltipTrigger asChild>
-                       <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
-                     </TooltipTrigger>
-                     <TooltipContent className="max-w-xs">
-                       <p>
-                         {data.profilInvestisseur === 'PERSONNE_PHYSIQUE' 
-                           ? 'Impôts calculés avec flat tax 30% sur la plus-value uniquement' 
-                           : 'IS non calculé pour le moment'}
-                       </p>
-                     </TooltipContent>
-                   </Tooltip>
-                   <div className="big-number text-xl font-bold text-amber-500">
-                     {data.profilInvestisseur === 'PERSONNE_PHYSIQUE' 
-                       ? `-${Math.round(finalResults.impotsTotaux).toLocaleString('fr-FR')} €`
-                       : 'N/A'}
-                   </div>
-                   <p className="text text-sm mt-1">Impôts</p>
-                 </div>
-
-                 <div className="box relative">
-                   <Tooltip>
-                     <TooltipTrigger asChild>
-                       <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
-                     </TooltipTrigger>
-                     <TooltipContent className="max-w-xs">
-                       <p>Total net perçu après impôts et frais</p>
-                     </TooltipContent>
-                   </Tooltip>
-                   <div className="big-number text-xl font-bold text-green-500">
-                     {Math.round(finalResults.totalNetPercu).toLocaleString('fr-FR')} €
-                   </div>
-                   <p className="text text-sm mt-1">Total net perçu</p>
-                 </div>
-               </div>
-              </div>
-
-              {/* Scénario avec réinvestissement */}
-              {data.reinvestirDistributions && (
+              {!data.reinvestirDistributions ? (
+                /* Scénario sans réinvestissement */
                 <div className="box">
-                  <h3 className="text-lg font-semibold mb-4">Avec réinvestissement ({
+                  <h3 className="text-lg font-semibold mb-4">Résultats</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Montant réellement décaissé de votre poche. Grâce au recyclage des distributions, ce montant est inférieur à votre souscription initiale car une partie des distributions retournent dans le fonds.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold">
+                        {Math.round(finalResults.capitalRealInvesti).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Capital réel investi</p>
+                    </div>
+
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Valeur totale de votre investissement à la fin de la période, incluant le réinvestissement des distributions nettes au taux de 15% annuel, après déduction des frais totaux.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold">
+                        {Math.round(finalResults.valeurFinaleReinvestie).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Valeur finale</p>
+                    </div>
+
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Frais totaux de la plateforme sur 10 ans, déduits de la valeur finale. Comprend les frais d'entrée et les frais annuels de gestion.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold text-destructive">
+                        -{Math.round(finalResults.fraisTotaux).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Frais totaux</p>
+                    </div>
+
+                    {data.souscription < 30000 && finalResults.interetsObligataires > 0 && (
+                      <div className="box relative">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>Intérêts générés à 2%/an sur le capital placé en support obligataire dans le SPV, en attendant les appels de fonds. Ces intérêts sont capitalisés et consommés en priorité lors des appels.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <div className="big-number text-xl font-bold text-green-500">
+                          +{Math.round(finalResults.interetsObligataires).toLocaleString('fr-FR')} €
+                        </div>
+                        <p className="text text-sm mt-1">Intérêts obligataires (2%)</p>
+                      </div>
+                    )}
+
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Total Value to Paid-In capital : ratio entre la valeur finale et le capital réel investi. Correspond au MOIC cible de la stratégie choisie.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold">
+                        {Math.round(data.moicCible * 100) / 100}x
+                      </div>
+                      <p className="text text-sm mt-1">TVPI</p>
+                    </div>
+
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Taux de Rendement Interne annualisé sans réinvestissement des distributions, tenant compte du recyclage uniquement.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold">
+                        {(finalResults.triAnnuelSansReinvest * 100).toFixed(2)}%
+                      </div>
+                      <p className="text text-sm mt-1">TRI Annuel</p>
+                    </div>
+
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>
+                            {data.profilInvestisseur === 'PERSONNE_PHYSIQUE' 
+                              ? 'Impôts calculés avec flat tax 30% sur la plus-value uniquement' 
+                              : 'IS non calculé pour le moment'}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold text-amber-500">
+                        {data.profilInvestisseur === 'PERSONNE_PHYSIQUE' 
+                          ? `-${Math.round(finalResults.impotsTotaux).toLocaleString('fr-FR')} €`
+                          : 'N/A'}
+                      </div>
+                      <p className="text text-sm mt-1">Impôts</p>
+                    </div>
+
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Total net perçu après impôts et frais</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold text-green-500">
+                        {Math.round(finalResults.totalNetPercu).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Total net perçu</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Scénario avec réinvestissement */
+                <div className="box">
+                  <h3 className="text-lg font-semibold mb-4">Résultats avec réinvestissement ({
                     data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC' :
-                    data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth' : 'LBO'
+                    data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth' :
+                    data.typeReinvestissement === 'SECONDARY' ? 'Secondaire' : 'LBO'
                   })</h3>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="box relative">
@@ -931,7 +930,8 @@ export default function InvestmentSimulator() {
                         <TooltipContent className="max-w-xs">
                           <p>Valeur totale de votre investissement avec réinvestissement des distributions dans un fonds {
                             data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC (TRI 15%)' :
-                            data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital (TRI 13,3%)' : 'LBO (TRI 9,6%)'
+                            data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital (TRI 13,3%)' : 
+                            data.typeReinvestissement === 'SECONDARY' ? 'Secondaire (TRI 8,2%)' : 'LBO (TRI 9,6%)'
                           }.</p>
                         </TooltipContent>
                       </Tooltip>
@@ -940,6 +940,38 @@ export default function InvestmentSimulator() {
                       </div>
                       <p className="text text-sm mt-1">Valeur finale</p>
                     </div>
+
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Frais totaux de la plateforme sur 10 ans, déduits de la valeur finale. Comprend les frais d'entrée et les frais annuels de gestion.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold text-destructive">
+                        -{Math.round(finalResults.fraisTotaux).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Frais totaux</p>
+                    </div>
+
+                    {data.souscription < 30000 && finalResults.interetsObligataires > 0 && (
+                      <div className="box relative">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>Intérêts générés à 2%/an sur le capital placé en support obligataire dans le SPV, en attendant les appels de fonds. Ces intérêts sont capitalisés et consommés en priorité lors des appels.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <div className="big-number text-xl font-bold text-green-500">
+                          +{Math.round(finalResults.interetsObligataires).toLocaleString('fr-FR')} €
+                        </div>
+                        <p className="text text-sm mt-1">Intérêts obligataires (2%)</p>
+                      </div>
+                    )}
 
                     <div className="box relative">
                       <Tooltip>
@@ -964,13 +996,14 @@ export default function InvestmentSimulator() {
                         <TooltipContent className="max-w-xs">
                           <p>Taux de Rendement Interne annualisé en réinvestissant les distributions dans un fonds {
                             data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC' :
-                            data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital' : 'LBO'
+                            data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital' : 
+                            data.typeReinvestissement === 'SECONDARY' ? 'Secondaire' : 'LBO'
                           }.</p>
                         </TooltipContent>
                       </Tooltip>
-                       <div className="big-number text-xl font-bold">
-                         {(resultsAvecReinvestissement.triAnnuel * 100).toFixed(2)}%
-                       </div>
+                      <div className="big-number text-xl font-bold">
+                        {(resultsAvecReinvestissement.triAnnuel * 100).toFixed(2)}%
+                      </div>
                       <p className="text text-sm mt-1">TRI Annuel</p>
                     </div>
 
@@ -1008,21 +1041,6 @@ export default function InvestmentSimulator() {
                         {Math.round(resultsAvecReinvestissement.totalNetPercu).toLocaleString('fr-FR')} €
                       </div>
                       <p className="text text-sm mt-1">Total net perçu</p>
-                    </div>
-
-                    <div className="box relative bg-primary/10">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p>Gain net supplémentaire généré par le réinvestissement des distributions par rapport au scénario sans réinvestissement.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <div className="big-number text-xl font-bold text-primary">
-                        +{Math.round(resultsAvecReinvestissement.totalNetPercu - finalResults.totalNetPercu).toLocaleString('fr-FR')} €
-                      </div>
-                      <p className="text text-sm mt-1">Gain net</p>
                     </div>
                   </div>
                 </div>
