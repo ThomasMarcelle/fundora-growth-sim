@@ -914,6 +914,21 @@ export default function InvestmentSimulator() {
                           <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs">
+                          <p>Montant réellement décaissé de votre poche. Grâce au recyclage des distributions, ce montant est inférieur à votre souscription initiale car une partie des distributions retournent dans le fonds.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold">
+                        {Math.round(finalResults.capitalRealInvesti).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Capital réel investi</p>
+                    </div>
+
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
                           <p>Valeur totale de votre investissement avec réinvestissement des distributions dans un fonds {
                             data.typeReinvestissement === 'VENTURE_CAPITAL' ? 'VC (TRI 15%)' :
                             data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth Capital (TRI 13,3%)' : 'LBO (TRI 9,6%)'
