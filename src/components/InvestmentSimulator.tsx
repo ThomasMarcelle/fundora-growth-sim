@@ -323,15 +323,15 @@ export default function InvestmentSimulator() {
 
     // Calcul avec réinvestissement si activé
     if (data.reinvestirDistributions) {
-      // Simuler le réinvestissement des distributions dans le type choisi
-      let valeurTotaleAvecReinvest = 0;
+      // Calculer la somme des plus-values de réinvestissement
+      let sommePlusValues = 0;
       
       // TRI selon le type de réinvestissement
       const triReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 0.15 : 
                           data.typeReinvestissement === 'GROWTH_CAPITAL' ? 0.133 :
                           data.typeReinvestissement === 'SECONDARY' ? 0.082 : 0.096;
       
-      // Calculer la valeur de chaque distribution réinvestie avec le TRI composé
+      // Calculer la plus-value pour chaque distribution réinvestie
       years.forEach(year => {
         const distributionNette = year.distribution - year.distributionRecyclee;
         if (distributionNette > 0) {
@@ -340,24 +340,34 @@ export default function InvestmentSimulator() {
           
           // Valeur future = Valeur initiale × (1 + TRI)^durée
           const valeurFuture = distributionNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
-          valeurTotaleAvecReinvest += valeurFuture;
+          
+          // Plus-value = Valeur réinvestie - Distribution nette
+          const plusValue = valeurFuture - distributionNette;
+          sommePlusValues += plusValue;
         }
       });
       
       // Calcul impôts avec réinvestissement
       let impotsTotauxReinvest = 0;
+      let valeurFinaleAvecReinvest = 0;
       let totalNetPercuReinvest = 0;
       
       if (data.profilInvestisseur === 'PERSONNE_PHYSIQUE') {
-        // La flat tax = (total redistributions - souscription) * 0.30
-        impotsTotauxReinvest = Math.max(0, valeurTotaleAvecReinvest - data.souscription) * 0.30;
-        // Total net perçu = Total redistributions - Impôts
-        totalNetPercuReinvest = valeurTotaleAvecReinvest - impotsTotauxReinvest;
+        // Impôts = Plus-values * 0.30
+        impotsTotauxReinvest = sommePlusValues * 0.30;
+        
+        // Valeur finale = Valeur finale sans réinvestissement + Somme des plus-values
+        valeurFinaleAvecReinvest = valeurFinaleReinvestie + sommePlusValues;
+        
+        // Total net perçu = Valeur finale - Impôts
+        totalNetPercuReinvest = valeurFinaleAvecReinvest - impotsTotauxReinvest;
       } else {
-        totalNetPercuReinvest = valeurTotaleAvecReinvest;
+        // Personne morale - Valeur finale = Valeur finale sans réinvestissement + Somme des plus-values
+        valeurFinaleAvecReinvest = valeurFinaleReinvestie + sommePlusValues;
+        totalNetPercuReinvest = valeurFinaleAvecReinvest;
       }
       
-      const moicAvecReinvest = valeurTotaleAvecReinvest / totalActualCashOut;
+      const moicAvecReinvest = valeurFinaleAvecReinvest / totalActualCashOut;
       
       // Calcul du TRI avec réinvestissement en utilisant les flux de trésorerie
       const fluxTresorerieAvecReinvest = years.map(year => {
@@ -373,7 +383,7 @@ export default function InvestmentSimulator() {
       const triAvecReinvest = calculateTRI(fluxTresorerieAvecReinvest);
       
       setResultsAvecReinvestissement({
-        valeurFinale: valeurTotaleAvecReinvest,
+        valeurFinale: valeurFinaleAvecReinvest,
         moic: moicAvecReinvest,
         triAnnuel: triAvecReinvest,
         impotsTotaux: impotsTotauxReinvest,
