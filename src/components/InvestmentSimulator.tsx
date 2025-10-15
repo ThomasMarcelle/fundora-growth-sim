@@ -830,7 +830,7 @@ export default function InvestmentSimulator() {
                      </TooltipContent>
                    </Tooltip>
                    <div className="big-number text-xl font-bold">
-                     {Math.round(finalResults.triAnnuelSansReinvest * 100)}%
+                     {(finalResults.triAnnuelSansReinvest * 100).toFixed(2)}%
                    </div>
                     <p className="text text-sm mt-1">TRI Annuel</p>
                   </div>
@@ -926,9 +926,9 @@ export default function InvestmentSimulator() {
                           }.</p>
                         </TooltipContent>
                       </Tooltip>
-                      <div className="big-number text-xl font-bold">
-                        {Math.round(resultsAvecReinvestissement.triAnnuel * 100)}%
-                      </div>
+                       <div className="big-number text-xl font-bold">
+                         {(resultsAvecReinvestissement.triAnnuel * 100).toFixed(2)}%
+                       </div>
                       <p className="text text-sm mt-1">TRI Annuel</p>
                     </div>
 
