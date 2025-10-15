@@ -247,51 +247,16 @@ export default function InvestmentSimulator() {
       years.push(year);
     }
 
-    // Calcul du TRI avec la vraie formule mathématique
-    const calculateTRI = (fluxTresorerie: number[]): number => {
-      // Méthode de Newton-Raphson pour résoudre VAN = 0
-      let r = 0.1; // Estimation initiale de 10%
-      const tolerance = 1e-10; // Tolérance plus stricte pour une précision décimale
-      const maxIterations = 1000; // Plus d'itérations pour garantir la convergence
-      
-      for (let i = 0; i < maxIterations; i++) {
-        let van = 0;
-        let vanDerivee = 0;
-        
-        // Calcul de la VAN et de sa dérivée
-        for (let t = 0; t < fluxTresorerie.length; t++) {
-          const denominateur = Math.pow(1 + r, t);
-          van += fluxTresorerie[t] / denominateur;
-          if (t > 0) {
-            vanDerivee -= (t * fluxTresorerie[t]) / Math.pow(1 + r, t + 1);
-          }
-        }
-        
-        // Si VAN est proche de 0, on a trouvé le TRI
-        if (Math.abs(van) < tolerance) {
-          return r;
-        }
-        
-        // Mise à jour de r selon Newton-Raphson
-        if (Math.abs(vanDerivee) > tolerance) {
-          r = r - van / vanDerivee;
-        }
-      }
-      
-      return r; // Retourne la dernière estimation
+    // Calcul du TRI avec formule fixe : TRI = (MOIC^(1/durée) - 1)
+    const calculateTRI = (moic: number, duree: number): number => {
+      return Math.pow(moic, 1 / duree) - 1;
     };
-
-    // Préparer les flux de trésorerie (cash décaissé et distributions sans réinvestissement)
-    const fluxTresorerieSansReinvest = years.map(year => {
-      // Cash décaissé (négatif) et distributions réelles (positives)
-      return year.montantRealDecaisse + (year.distribution - year.distributionRecyclee);
-    });
     
     // Calcul des résultats finaux
     // La valeur finale = souscription * MOIC cible
     const valeurFinaleReinvestie = data.souscription * data.moicCible;
     const moic = data.moicCible;
-    const triAnnuelSansReinvest = calculateTRI(fluxTresorerieSansReinvest);
+    const triAnnuelSansReinvest = calculateTRI(moic, data.dureeVieFonds);
 
     // Calcul des impôts - flat tax 30% sur la plus-value uniquement pour personne physique
     let impotsTotaux = 0;
@@ -372,18 +337,8 @@ export default function InvestmentSimulator() {
       
       const moicAvecReinvest = valeurFinaleAvecReinvest / totalActualCashOut;
       
-      // Calcul du TRI avec réinvestissement en utilisant les flux de trésorerie
-      const fluxTresorerieAvecReinvest = years.map(year => {
-        const distributionNette = year.distribution - year.distributionRecyclee;
-        if (distributionNette > 0) {
-          const anneesRestantes = data.dureeVieFonds - year.annee;
-          const valeurFutureReinvest = distributionNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
-          return year.montantRealDecaisse + valeurFutureReinvest;
-        }
-        return year.montantRealDecaisse;
-      });
-      
-      const triAvecReinvest = calculateTRI(fluxTresorerieAvecReinvest);
+      // Calcul du TRI avec réinvestissement en utilisant la formule fixe
+      const triAvecReinvest = calculateTRI(moicAvecReinvest, data.dureeVieFonds);
       
       setResultsAvecReinvestissement({
         valeurFinale: valeurFinaleAvecReinvest,
