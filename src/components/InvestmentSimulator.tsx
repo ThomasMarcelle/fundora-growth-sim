@@ -287,12 +287,10 @@ export default function InvestmentSimulator() {
       return year.montantRealDecaisse + (year.distribution - year.distributionRecyclee);
     });
     
-    // Calcul des résultats finaux - les frais sont déduits de la valeur finale
-    const valeurFinaleAvantFrais = years.reduce((sum, year) => sum + year.valeurFuture, 0);
-    // Pour les tickets < 30k, ajouter les intérêts obligataires à la valeur finale
-    const valeurFinaleAvecInterets = valeurFinaleAvantFrais + interetsObligatairesTotaux;
-    const valeurFinaleReinvestie = valeurFinaleAvecInterets - fraisTotaux;
-    const moic = valeurFinaleReinvestie / totalActualCashOut;
+    // Calcul des résultats finaux
+    // La valeur finale = souscription * MOIC cible
+    const valeurFinaleReinvestie = data.souscription * data.moicCible;
+    const moic = data.moicCible;
     const triAnnuelSansReinvest = calculateTRI(fluxTresorerieSansReinvest);
 
     // Calcul des impôts - flat tax 30% sur la plus-value uniquement pour personne physique
