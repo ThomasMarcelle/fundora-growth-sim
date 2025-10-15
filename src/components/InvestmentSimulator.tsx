@@ -353,13 +353,16 @@ export default function InvestmentSimulator() {
       let totalNetPercuReinvest = 0;
       
       if (data.profilInvestisseur === 'PERSONNE_PHYSIQUE') {
-        // Impôts = Plus-values * 0.30
-        impotsTotauxReinvest = sommePlusValues * 0.30;
+        // Impôts sur les plus-values du réinvestissement
+        const impotsPlusValues = sommePlusValues * 0.30;
+        
+        // Impôts totaux = Impôts sans réinvestissement + Impôts sur plus-values
+        impotsTotauxReinvest = impotsTotaux + impotsPlusValues;
         
         // Valeur finale = Valeur finale sans réinvestissement + Somme des plus-values
         valeurFinaleAvecReinvest = valeurFinaleReinvestie + sommePlusValues;
         
-        // Total net perçu = Valeur finale - Impôts
+        // Total net perçu = Valeur finale - Impôts totaux
         totalNetPercuReinvest = valeurFinaleAvecReinvest - impotsTotauxReinvest;
       } else {
         // Personne morale - Valeur finale = Valeur finale sans réinvestissement + Somme des plus-values
