@@ -247,16 +247,17 @@ export default function InvestmentSimulator() {
       years.push(year);
     }
 
-    // Calcul du TRI avec formule fixe : TRI = (MOIC^(1/durée) - 1)
-    const calculateTRI = (moic: number, duree: number): number => {
-      return Math.pow(moic, 1 / duree) - 1;
+    // Calcul du TRI avec formule fixe : TRI = (Valeur finale / Capital réel investi)^(1/durée) - 1
+    const calculateTRI = (valeurFinale: number, capitalReel: number, duree: number): number => {
+      if (capitalReel <= 0 || duree <= 0) return 0;
+      return Math.pow(valeurFinale / capitalReel, 1 / duree) - 1;
     };
     
     // Calcul des résultats finaux
     // La valeur finale = souscription * MOIC cible
     const valeurFinaleReinvestie = data.souscription * data.moicCible;
     const moic = data.moicCible;
-    const triAnnuelSansReinvest = calculateTRI(moic, data.dureeVieFonds);
+    const triAnnuelSansReinvest = calculateTRI(valeurFinaleReinvestie, totalActualCashOut, data.dureeVieFonds);
 
     // Calcul des impôts - flat tax 30% sur la plus-value uniquement pour personne physique
     let impotsTotaux = 0;
@@ -338,7 +339,7 @@ export default function InvestmentSimulator() {
       const moicAvecReinvest = valeurFinaleAvecReinvest / totalActualCashOut;
       
       // Calcul du TRI avec réinvestissement en utilisant la formule fixe
-      const triAvecReinvest = calculateTRI(moicAvecReinvest, data.dureeVieFonds);
+      const triAvecReinvest = calculateTRI(valeurFinaleAvecReinvest, totalActualCashOut, data.dureeVieFonds);
       
       setResultsAvecReinvestissement({
         valeurFinale: valeurFinaleAvecReinvest,
