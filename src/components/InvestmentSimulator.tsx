@@ -224,7 +224,7 @@ export default function InvestmentSimulator() {
       // Cash décaissé = capital call + distribution recyclée (mais 0 si pas de capital call)
       // Les frais sont déjà déduits du montant investi au début
       year.montantRealDecaisse = year.capitalCall < 0 ? year.capitalCall + year.distributionRecyclee : 0;
-      year.fluxNet = year.distribution - year.distributionRecyclee + year.capitalCall;
+      year.fluxNet = year.capitalCall + year.distribution;
 
       const distributionNette = year.distribution - year.distributionRecyclee;
       if (distributionNette > 0) {
@@ -1074,7 +1074,7 @@ export default function InvestmentSimulator() {
                                     <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
                                   </TooltipTrigger>
                                   <TooltipContent className="max-w-xs">
-                                    <p>Flux de trésorerie net : Distribution - Distribution Recyclée + Cash Décaissé</p>
+                                    <p>Flux de trésorerie net : Capital Call + Distributions</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </div>
