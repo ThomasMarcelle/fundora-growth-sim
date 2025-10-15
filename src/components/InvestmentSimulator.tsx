@@ -1091,6 +1091,19 @@ export default function InvestmentSimulator() {
                                 </Tooltip>
                               </div>
                             </th>
+                            <th className="text-right p-2 bg-primary/10">
+                              <div className="flex items-center justify-end gap-1">
+                                Plus-value
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                                  </TooltipTrigger>
+                                   <TooltipContent className="max-w-xs">
+                                     <p>Plus-value générée par le réinvestissement = Valeur Réinvestie - Distribution à Réinvestir</p>
+                                   </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </th>
                           </>
                         )}
                       </tr>
@@ -1147,6 +1160,9 @@ export default function InvestmentSimulator() {
                                </td>
                                <td className="text-right p-2 bg-primary/5 text-primary font-medium">
                                  {valeurReinvestie > 0 ? `${Math.round(valeurReinvestie).toLocaleString('fr-FR')} €` : '-'}
+                               </td>
+                               <td className="text-right p-2 bg-primary/10 text-green-400 font-medium">
+                                 {valeurReinvestie > 0 ? `+${Math.round(valeurReinvestie - distributionNette).toLocaleString('fr-FR')} €` : '-'}
                                </td>
                              </>
                            )}
