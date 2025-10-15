@@ -362,15 +362,16 @@ export default function InvestmentSimulator() {
         [field]: value
       };
       
-      // Si la souscription change et est < 30 000€, mettre automatiquement 100% en année 1
+      // Si la souscription change et passe à < 30 000€ ET que les capital calls sont tous à 0
       if (field === 'souscription' && typeof value === 'number' && value < 30000) {
-        const newCapitalCalls = [...prev.capitalCallsParAnnee];
-        newCapitalCalls[0] = 100; // 100% en première année
-        // Mettre les autres années à 0
-        for (let i = 1; i < newCapitalCalls.length; i++) {
-          newCapitalCalls[i] = 0;
+        // Vérifier si les capital calls sont tous à 0 (nouveau formulaire)
+        const allZero = prev.capitalCallsParAnnee.every(cc => cc === 0);
+        if (allZero) {
+          const newCapitalCalls = [...prev.capitalCallsParAnnee];
+          newCapitalCalls[0] = 100; // 100% en première année
+          newData.capitalCallsParAnnee = newCapitalCalls;
         }
-        newData.capitalCallsParAnnee = newCapitalCalls;
+        // Sinon, on garde les valeurs existantes
       }
       
       return newData;
