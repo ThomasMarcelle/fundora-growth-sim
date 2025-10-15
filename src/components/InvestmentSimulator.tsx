@@ -301,13 +301,12 @@ export default function InvestmentSimulator() {
     
     if (data.profilInvestisseur === 'PERSONNE_PHYSIQUE') {
       // La flat tax s'applique uniquement sur les gains (plus-value)
-      // Plus-value = Total des distributions - Capital réellement décaissé
-      const capital = totalActualCashOut;
-      const totalDistributions = valeurFinaleReinvestie;
-      const plusValue = Math.max(0, totalDistributions - capital);
+      // Plus-value = Total net perçu (redistributions) - Souscription initiale
+      const totalDistributionsAvantImpots = valeurFinaleReinvestie;
+      const plusValue = Math.max(0, totalDistributionsAvantImpots - data.souscription);
       impotsTotaux = plusValue * 0.30;
-      // Total net perçu = Capital de départ + Plus-value nette d'impôts
-      totalNetPercu = capital + (plusValue - impotsTotaux);
+      // Total net perçu = Total distributions - Impôts sur la plus-value
+      totalNetPercu = totalDistributionsAvantImpots - impotsTotaux;
     } else {
       // Personne morale - IS non calculé
       totalNetPercu = valeurFinaleReinvestie;
@@ -355,10 +354,11 @@ export default function InvestmentSimulator() {
       
       if (data.profilInvestisseur === 'PERSONNE_PHYSIQUE') {
         // La flat tax s'applique uniquement sur les gains (plus-value)
-        const plusValue = Math.max(0, valeurTotaleAvecReinvest - totalActualCashOut);
+        // Plus-value = Total net perçu (redistributions) - Souscription initiale
+        const plusValue = Math.max(0, valeurTotaleAvecReinvest - data.souscription);
         impotsTotauxReinvest = plusValue * 0.30;
-        // Total net perçu = Capital de départ + Plus-value nette d'impôts
-        totalNetPercuReinvest = totalActualCashOut + (plusValue - impotsTotauxReinvest);
+        // Total net perçu = Total distributions - Impôts sur la plus-value
+        totalNetPercuReinvest = valeurTotaleAvecReinvest - impotsTotauxReinvest;
       } else {
         totalNetPercuReinvest = valeurTotaleAvecReinvest;
       }
