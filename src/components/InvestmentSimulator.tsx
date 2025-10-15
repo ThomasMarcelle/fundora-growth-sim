@@ -1088,7 +1088,7 @@ export default function InvestmentSimulator() {
                                      <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
                                    </TooltipTrigger>
                                    <TooltipContent className="max-w-xs">
-                                     <p>Flux de trésorerie net : Valeur Future - Cash Décaissé. Représente le bénéfice net anticipé.</p>
+                                     <p>Flux de trésorerie net : Distribution - Distribution Recyclée + Cash Décaissé</p>
                                    </TooltipContent>
                                  </Tooltip>
                                </div>
@@ -1186,8 +1186,8 @@ export default function InvestmentSimulator() {
                                    {year.valeurFuture > 0 ? `${Math.round(year.valeurFuture).toLocaleString('fr-FR')} €` : '-'}
                                  </td>
                                  <td className="text-right p-2 font-semibold">
-                                   <span className={year.valeurFuture - Math.abs(year.montantRealDecaisse) > 0 ? 'text-green-400' : year.valeurFuture - Math.abs(year.montantRealDecaisse) < 0 ? 'text-red-400' : ''}>
-                                     {Math.round(year.valeurFuture - Math.abs(year.montantRealDecaisse)).toLocaleString('fr-FR')} €
+                                   <span className={year.fluxNet > 0 ? 'text-green-400' : year.fluxNet < 0 ? 'text-red-400' : ''}>
+                                     {Math.round(year.fluxNet).toLocaleString('fr-FR')} €
                                    </span>
                                  </td>
                                </>
