@@ -19,8 +19,8 @@ interface SimulationData {
   reinvestirDistributions: boolean;
   typeReinvestissement: 'BUYOUT' | 'VENTURE_CAPITAL' | 'GROWTH_CAPITAL' | 'SECONDARY';
   dureeVieFonds: number; // Durée de vie totale du fonds
-  capitalCallsParAnnee: number[]; // Capital calls par année (saisis manuellement)
-  distributionsParAnnee: number[]; // Distributions par année (saisies manuellement)
+  capitalCallsParAnnee: number[]; // Capital calls par année en % de la souscription
+  distributionsParAnnee: number[]; // Distributions par année en % de la souscription
 }
 
 interface YearlyData {
@@ -105,9 +105,9 @@ export default function InvestmentSimulator() {
     const isSmallTicket = data.souscription < 30000;
     const tauxObligataire = 0.02; // 2% par an
 
-    // Les capital calls et distributions sont maintenant saisis manuellement
-    const capitalCallsUtilises = data.capitalCallsParAnnee.slice(0, data.dureeVieFonds);
-    const distributionsUtilisees = data.distributionsParAnnee.slice(0, data.dureeVieFonds);
+    // Les capital calls et distributions sont saisis en pourcentage, on les convertit en montants
+    const capitalCallsUtilises = data.capitalCallsParAnnee.slice(0, data.dureeVieFonds).map(pct => (pct / 100) * data.souscription);
+    const distributionsUtilisees = data.distributionsParAnnee.slice(0, data.dureeVieFonds).map(pct => (pct / 100) * data.souscription);
 
     // Pour les tickets < 30k : calculer le capital total appelé selon les valeurs saisies
     let capitalAppelNormal: number[] = []; // Pour chaque année, le capital appelé cumulé normalement
@@ -588,36 +588,51 @@ export default function InvestmentSimulator() {
                   </div>
 
                   <div className="space-y-2 border-t pt-4">
-                    <Label>Capital Calls par année (€)</Label>
+                    <Label>Capital Calls par année (%)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Pourcentage de la souscription ({data.souscription.toLocaleString('fr-FR')}€)
+                    </p>
                     <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
                       {Array.from({ length: data.dureeVieFonds }).map((_, index) => (
                         <div key={index} className="flex items-center gap-2">
                           <Label className="text-xs w-16">Année {index + 1}</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={data.capitalCallsParAnnee[index] || 0}
-                            onChange={(e) => handleCapitalCallChange(index, Number(e.target.value))}
-                            className="text-sm"
-                          />
+                          <div className="flex items-center gap-1 flex-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              value={data.capitalCallsParAnnee[index] || 0}
+                              onChange={(e) => handleCapitalCallChange(index, Number(e.target.value))}
+                              className="text-sm"
+                            />
+                            <span className="text-xs text-muted-foreground">%</span>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   <div className="space-y-2 border-t pt-4">
-                    <Label>Distributions par année (€)</Label>
+                    <Label>Distributions par année (%)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Pourcentage de la souscription ({data.souscription.toLocaleString('fr-FR')}€)
+                    </p>
                     <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
                       {Array.from({ length: data.dureeVieFonds }).map((_, index) => (
                         <div key={index} className="flex items-center gap-2">
                           <Label className="text-xs w-16">Année {index + 1}</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={data.distributionsParAnnee[index] || 0}
-                            onChange={(e) => handleDistributionChange(index, Number(e.target.value))}
-                            className="text-sm"
-                          />
+                          <div className="flex items-center gap-1 flex-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              value={data.distributionsParAnnee[index] || 0}
+                              onChange={(e) => handleDistributionChange(index, Number(e.target.value))}
+                              className="text-sm"
+                            />
+                            <span className="text-xs text-muted-foreground">%</span>
+                          </div>
                         </div>
                       ))}
                     </div>
