@@ -359,14 +359,11 @@ export default function InvestmentSimulator() {
         // Impôts totaux = Impôts sans réinvestissement + Impôts sur plus-values
         impotsTotauxReinvest = impotsTotaux + impotsPlusValues;
         
-        // Plus-values après impôts
-        const plusValuesApresImpots = sommePlusValues - impotsPlusValues;
+        // Valeur finale = Total net perçu sans réinvestissement + Plus-values brutes
+        valeurFinaleAvecReinvest = totalNetPercu + sommePlusValues;
         
-        // Valeur finale = Total net perçu sans réinvestissement + Plus-values après impôts
-        valeurFinaleAvecReinvest = totalNetPercu + plusValuesApresImpots;
-        
-        // Total net perçu = Valeur finale (impôts déjà déduits)
-        totalNetPercuReinvest = valeurFinaleAvecReinvest;
+        // Total net perçu = Valeur finale - Flat tax sur les réinvestissements
+        totalNetPercuReinvest = valeurFinaleAvecReinvest - impotsPlusValues;
       } else {
         // Personne morale - Valeur finale = Total net perçu sans réinvestissement + Somme des plus-values
         valeurFinaleAvecReinvest = totalNetPercu + sommePlusValues;
