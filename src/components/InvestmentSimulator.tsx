@@ -247,17 +247,60 @@ export default function InvestmentSimulator() {
       years.push(year);
     }
 
-    // Calcul du TRI avec formule fixe : TRI = (Valeur finale / Capital réel investi)^(1/durée) - 1
-    const calculateTRI = (valeurFinale: number, capitalReel: number, duree: number): number => {
-      if (capitalReel <= 0 || duree <= 0) return 0;
-      return Math.pow(valeurFinale / capitalReel, 1 / duree) - 1;
+    // Calcul du TRI basé sur les flux nets réels (méthode de Newton-Raphson)
+    const calculateTRI = (fluxNets: number[], duree: number): number => {
+      if (duree <= 0 || fluxNets.length === 0) return 0;
+      
+      // Fonction VAN (Valeur Actuelle Nette)
+      const calculateVAN = (taux: number): number => {
+        return fluxNets.reduce((van, flux, index) => {
+          return van + flux / Math.pow(1 + taux, index + 1);
+        }, 0);
+      };
+      
+      // Dérivée de la VAN
+      const calculateDeriveeVAN = (taux: number): number => {
+        return fluxNets.reduce((derivee, flux, index) => {
+          const annee = index + 1;
+          return derivee - (annee * flux) / Math.pow(1 + taux, annee + 1);
+        }, 0);
+      };
+      
+      // Méthode de Newton-Raphson pour trouver le TRI
+      let taux = 0.1; // Estimation initiale à 10%
+      const maxIterations = 100;
+      const precision = 0.0001;
+      
+      for (let i = 0; i < maxIterations; i++) {
+        const van = calculateVAN(taux);
+        const derivee = calculateDeriveeVAN(taux);
+        
+        if (Math.abs(derivee) < 0.000001) break; // Éviter la division par zéro
+        
+        const nouveauTaux = taux - van / derivee;
+        
+        if (Math.abs(nouveauTaux - taux) < precision) {
+          return nouveauTaux;
+        }
+        
+        taux = nouveauTaux;
+        
+        // Limiter le taux pour éviter les valeurs aberrantes
+        if (taux < -0.99) taux = -0.99;
+        if (taux > 10) taux = 10;
+      }
+      
+      return taux;
     };
     
     // Calcul des résultats finaux
     // La valeur finale = souscription * MOIC cible
     const valeurFinaleReinvestie = data.souscription * data.moicCible;
     const moic = data.moicCible;
-    const triAnnuelSansReinvest = calculateTRI(valeurFinaleReinvestie, totalActualCashOut, data.dureeVieFonds);
+    
+    // Préparer les flux nets pour le calcul du TRI
+    const fluxNetsSansReinvest = years.map(y => y.fluxNet);
+    const triAnnuelSansReinvest = calculateTRI(fluxNetsSansReinvest, data.dureeVieFonds);
 
     // Calcul des impôts - flat tax 30% sur la plus-value uniquement pour personne physique
     let impotsTotaux = 0;
@@ -338,8 +381,20 @@ export default function InvestmentSimulator() {
       
       const moicAvecReinvest = valeurFinaleAvecReinvest / totalActualCashOut;
       
-      // Calcul du TRI avec réinvestissement en utilisant la formule fixe
-      const triAvecReinvest = calculateTRI(valeurFinaleAvecReinvest, totalActualCashOut, data.dureeVieFonds);
+      // Préparer les flux nets avec réinvestissement
+      const fluxNetsAvecReinvest = years.map((year, index) => {
+        // Le flux net de base
+        let fluxNet = year.fluxNet;
+        
+        // Ajouter la plus-value du réinvestissement à la dernière année
+        if (index === years.length - 1) {
+          fluxNet += sommePlusValues;
+        }
+        
+        return fluxNet;
+      });
+      
+      const triAvecReinvest = calculateTRI(fluxNetsAvecReinvest, data.dureeVieFonds);
       
       setResultsAvecReinvestissement({
         valeurFinale: valeurFinaleAvecReinvest,
