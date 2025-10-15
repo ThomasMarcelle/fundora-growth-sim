@@ -251,8 +251,8 @@ export default function InvestmentSimulator() {
     const calculateTRI = (fluxTresorerie: number[]): number => {
       // Méthode de Newton-Raphson pour résoudre VAN = 0
       let r = 0.1; // Estimation initiale de 10%
-      const tolerance = 1e-6;
-      const maxIterations = 100;
+      const tolerance = 1e-10; // Tolérance plus stricte pour une précision décimale
+      const maxIterations = 1000; // Plus d'itérations pour garantir la convergence
       
       for (let i = 0; i < maxIterations; i++) {
         let van = 0;
