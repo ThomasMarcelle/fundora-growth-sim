@@ -19,8 +19,8 @@ interface SimulationData {
   reinvestirDistributions: boolean;
   typeReinvestissement: 'BUYOUT' | 'VENTURE_CAPITAL' | 'GROWTH_CAPITAL' | 'SECONDARY';
   dureeVieFonds: number; // Durée de vie totale du fonds
-  periodCapitalCalls: number; // Période des capital calls (en années)
-  anneeDebutDistributions: number; // Année de début des distributions
+  capitalCallsParAnnee: number[]; // Capital calls par année (saisis manuellement)
+  distributionsParAnnee: number[]; // Distributions par année (saisies manuellement)
 }
 
 interface YearlyData {
@@ -48,8 +48,8 @@ export default function InvestmentSimulator() {
     reinvestirDistributions: false,
     typeReinvestissement: 'BUYOUT',
     dureeVieFonds: 10, // Durée de vie du fonds par défaut
-    periodCapitalCalls: 5, // Période de capital calls par défaut
-    anneeDebutDistributions: 4 // Année de début des distributions par défaut
+    capitalCallsParAnnee: Array(10).fill(0), // 10 années par défaut
+    distributionsParAnnee: Array(10).fill(0) // 10 années par défaut
   });
 
   const [results, setResults] = useState<YearlyData[]>([]);
@@ -105,35 +105,17 @@ export default function InvestmentSimulator() {
     const isSmallTicket = data.souscription < 30000;
     const tauxObligataire = 0.02; // 2% par an
 
-    // Utiliser les paramètres configurables
-    let montantAppelAnnuel = montantNetInvesti / data.periodCapitalCalls;
-    let nombreAnneesDistribution = data.dureeVieFonds - data.anneeDebutDistributions + 1;
-    let anneeDebutDistribution = data.anneeDebutDistributions;
-    
-    // Pour la dette, on garde la logique spécifique
-    if (data.investmentType === 'DEBT') {
-      montantAppelAnnuel = 0; // sera calculé spécialement
-      anneeDebutDistribution = 1; // coupons dès la première année
-      nombreAnneesDistribution = 8; // coupons sur 8 ans
-    }
+    // Les capital calls et distributions sont maintenant saisis manuellement
+    const capitalCallsUtilises = data.capitalCallsParAnnee.slice(0, data.dureeVieFonds);
+    const distributionsUtilisees = data.distributionsParAnnee.slice(0, data.dureeVieFonds);
 
-    // Pour les tickets < 30k : calculer le capital total appelé selon la courbe normale
-    // pour savoir ce qui est non appelé et donc placé en obligataire
+    // Pour les tickets < 30k : calculer le capital total appelé selon les valeurs saisies
     let capitalAppelNormal: number[] = []; // Pour chaque année, le capital appelé cumulé normalement
     
     if (isSmallTicket) {
       let cumulCapitalAppele = 0;
       for (let i = 1; i <= data.dureeVieFonds; i++) {
-        let capitalCallAnnuel = 0;
-        
-        if (data.investmentType === 'DEBT') {
-          if (i === 1) capitalCallAnnuel = montantNetInvesti * 0.35;
-          else if (i === 2) capitalCallAnnuel = montantNetInvesti * 0.35;
-          else if (i === 3) capitalCallAnnuel = montantNetInvesti * 0.30;
-        } else {
-          if (i <= data.periodCapitalCalls) capitalCallAnnuel = montantAppelAnnuel;
-        }
-        
+        const capitalCallAnnuel = capitalCallsUtilises[i - 1] || 0;
         cumulCapitalAppele += capitalCallAnnuel;
         capitalAppelNormal.push(cumulCapitalAppele);
       }
@@ -161,17 +143,9 @@ export default function InvestmentSimulator() {
         }
         // Mais on va comptabiliser les intérêts obligataires sur le capital non encore appelé
       } else {
-        // Logique normale pour les montants >= 30k
-        if (data.investmentType === 'DEBT') {
-          // Capital call pour la dette : 3 ans d'investissement 35%-35%-30%
-          if (i === 1) year.capitalCall = -montantNetInvesti * 0.35; // 35%
-          else if (i === 2) year.capitalCall = -montantNetInvesti * 0.35; // 35%
-          else if (i === 3) year.capitalCall = -montantNetInvesti * 0.30; // 30%
-        } else {
-          if (i <= data.periodCapitalCalls) {
-            year.capitalCall = -montantAppelAnnuel;
-          }
-        }
+        // Utiliser les valeurs saisies manuellement
+        const capitalCallSaisi = capitalCallsUtilises[i - 1] || 0;
+        year.capitalCall = capitalCallSaisi > 0 ? -capitalCallSaisi : 0;
       }
 
       // Pas de distributions dans cette passe d'estimation
@@ -183,14 +157,7 @@ export default function InvestmentSimulator() {
       firstPassYears.push(year);
     }
 
-    // Maintenant calculer les vraies distributions basées sur le capital réel décaissé
-    let valeurTotaleDistributions: number;
-    if (data.investmentType === 'DEBT') {
-      // Pour la dette, pas de MOIC mais rendement annuel + remboursement du capital
-      valeurTotaleDistributions = 0; // sera calculé différemment
-    } else {
-      valeurTotaleDistributions = totalActualCashOutEstimate * data.moicCible;
-    }
+    // Les distributions sont maintenant saisies manuellement, pas besoin de calculer valeurTotaleDistributions
 
     // Deuxième passe : calcul final avec les vraies distributions linéaires
     const years: YearlyData[] = [];
@@ -224,59 +191,14 @@ export default function InvestmentSimulator() {
           // Ces intérêts sont capitalisés et seront consommés en priorité lors des appels
         }
       } else {
-        // Logique normale pour les montants >= 30k
-        if (data.investmentType === 'DEBT') {
-          // Capital call pour la dette : 3 ans d'investissement 35%-35%-30%
-          if (i === 1) year.capitalCall = -montantNetInvesti * 0.35; // 35%
-          else if (i === 2) year.capitalCall = -montantNetInvesti * 0.35; // 35%
-          else if (i === 3) year.capitalCall = -montantNetInvesti * 0.30; // 30%
-        } else {
-          if (i <= data.periodCapitalCalls) {
-            year.capitalCall = -montantAppelAnnuel;
-          }
-        }
+        // Utiliser les valeurs saisies manuellement
+        const capitalCallSaisi = capitalCallsUtilises[i - 1] || 0;
+        year.capitalCall = capitalCallSaisi > 0 ? -capitalCallSaisi : 0;
       }
 
-      // Distributions selon la stratégie
-      if (data.investmentType === 'DEBT') {
-        // Logique spéciale pour la dette : coupons + remboursement du capital
-        
-        // Calculer le capital call cumulé jusqu'à cette année (incluse)
-        const capitalCallCumule = years.slice(0, i).reduce((sum, prevYear) => 
-          sum + Math.abs(prevYear.capitalCall), 0
-        ) + Math.abs(year.capitalCall);
-        
-        // Calculer le capital rendu cumulé jusqu'à cette année (incluse) 
-        const capitalRenduCumule = years.slice(0, i).reduce((sum, prevYear) => 
-          sum + (prevYear.capitalRendu || 0), 0
-        );
-        
-        // Remboursement du capital sur les années 4-7 (25% chaque année)
-        let remboursementCapital = 0;
-        if (i >= 4 && i <= 7) {
-          remboursementCapital = totalActualCashOutEstimate * 0.25;
-        }
-        
-        // Ajouter le remboursement de cette année au cumul pour le calcul des coupons
-        const capitalRenduCumuleAvecCetteAnnee = capitalRenduCumule + remboursementCapital;
-        
-        // Coupons = rendement cible * (Capital call cumulé - Capital rendu cumulé)
-        const capitalNetInvesti = Math.max(0, capitalCallCumule - capitalRenduCumuleAvecCetteAnnee);
-        const couponAnnuel = capitalNetInvesti * (data.rendementCible / 100);
-        
-        // Stocker séparément les coupons et le capital rendu
-        year.coupon = couponAnnuel;
-        year.capitalRendu = remboursementCapital;
-        year.distribution = couponAnnuel + remboursementCapital;
-        
-      } else {
-        // Distributions selon les paramètres configurables
-        if (i >= data.anneeDebutDistributions) {
-          const anneeDistribution = i - data.anneeDebutDistributions + 1;
-          const facteurCroissance = (2 * anneeDistribution) / (nombreAnneesDistribution + 1);
-          year.distribution = (valeurTotaleDistributions / nombreAnneesDistribution) * facteurCroissance;
-        }
-      }
+      // Distributions - utiliser les valeurs saisies manuellement
+      const distributionSaisie = distributionsUtilisees[i - 1] || 0;
+      year.distribution = distributionSaisie;
 
       // Calcul du recyclage - seulement si capital call ET distribution la même année
       const capitalDejaAppele = years.reduce((sum, prevYear) => {
@@ -505,6 +427,29 @@ export default function InvestmentSimulator() {
     }));
   };
 
+  const handleCapitalCallChange = (annee: number, valeur: number) => {
+    const newCapitalCalls = [...data.capitalCallsParAnnee];
+    newCapitalCalls[annee] = valeur;
+    setData(prev => ({ ...prev, capitalCallsParAnnee: newCapitalCalls }));
+  };
+
+  const handleDistributionChange = (annee: number, valeur: number) => {
+    const newDistributions = [...data.distributionsParAnnee];
+    newDistributions[annee] = valeur;
+    setData(prev => ({ ...prev, distributionsParAnnee: newDistributions }));
+  };
+
+  const handleDureeVieFondsChange = (nouvelleDuree: number) => {
+    const newCapitalCalls = Array(nouvelleDuree).fill(0).map((_, i) => data.capitalCallsParAnnee[i] || 0);
+    const newDistributions = Array(nouvelleDuree).fill(0).map((_, i) => data.distributionsParAnnee[i] || 0);
+    setData(prev => ({
+      ...prev,
+      dureeVieFonds: nouvelleDuree,
+      capitalCallsParAnnee: newCapitalCalls,
+      distributionsParAnnee: newDistributions
+    }));
+  };
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-background">
@@ -622,54 +567,56 @@ export default function InvestmentSimulator() {
                     </div>
                   )}
 
-                  {data.investmentType !== 'DEBT' && (
-                    <>
-                      <div className="space-y-2 border-t pt-4">
-                        <Label htmlFor="dureeVieFonds">Durée de vie du fonds (années)</Label>
-                        <Input
-                          id="dureeVieFonds"
-                          type="number"
-                          min="1"
-                          max="20"
-                          value={data.dureeVieFonds}
-                          onChange={(e) => handleInputChange('dureeVieFonds', Number(e.target.value))}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Durée totale du fonds
-                        </p>
-                      </div>
+                  <div className="space-y-2 border-t pt-4">
+                    <Label htmlFor="dureeVieFonds">Durée de vie du fonds (années)</Label>
+                    <Input
+                      id="dureeVieFonds"
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={data.dureeVieFonds}
+                      onChange={(e) => handleDureeVieFondsChange(Number(e.target.value))}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Durée totale du fonds
+                    </p>
+                  </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="periodCapitalCalls">Période de capital calls (années)</Label>
-                        <Input
-                          id="periodCapitalCalls"
-                          type="number"
-                          min="1"
-                          max={data.dureeVieFonds}
-                          value={data.periodCapitalCalls}
-                          onChange={(e) => handleInputChange('periodCapitalCalls', Number(e.target.value))}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Nombre d'années sur lesquelles le capital sera appelé
-                        </p>
-                      </div>
+                  <div className="space-y-2 border-t pt-4">
+                    <Label>Capital Calls par année (€)</Label>
+                    <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                      {Array.from({ length: data.dureeVieFonds }).map((_, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Label className="text-xs w-16">Année {index + 1}</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={data.capitalCallsParAnnee[index] || 0}
+                            onChange={(e) => handleCapitalCallChange(index, Number(e.target.value))}
+                            className="text-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="anneeDebutDistributions">Début des redistributions (année)</Label>
-                        <Input
-                          id="anneeDebutDistributions"
-                          type="number"
-                          min="1"
-                          max={data.dureeVieFonds}
-                          value={data.anneeDebutDistributions}
-                          onChange={(e) => handleInputChange('anneeDebutDistributions', Number(e.target.value))}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          À partir de quelle année les distributions commencent
-                        </p>
-                      </div>
-                    </>
-                  )}
+                  <div className="space-y-2 border-t pt-4">
+                    <Label>Distributions par année (€)</Label>
+                    <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                      {Array.from({ length: data.dureeVieFonds }).map((_, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Label className="text-xs w-16">Année {index + 1}</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={data.distributionsParAnnee[index] || 0}
+                            onChange={(e) => handleDistributionChange(index, Number(e.target.value))}
+                            className="text-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
                   <div className="space-y-2 border-t pt-4">
                     <Label>Profil investisseur</Label>
