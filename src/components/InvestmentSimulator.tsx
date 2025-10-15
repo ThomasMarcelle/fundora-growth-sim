@@ -107,7 +107,9 @@ export default function InvestmentSimulator() {
 
     // Les capital calls et distributions sont saisis en pourcentage, on les convertit en montants
     const capitalCallsUtilises = data.capitalCallsParAnnee.slice(0, data.dureeVieFonds).map(pct => (pct / 100) * data.souscription);
-    const distributionsUtilisees = data.distributionsParAnnee.slice(0, data.dureeVieFonds).map(pct => (pct / 100) * data.souscription);
+    // Les distributions sont basées sur (Souscription × MOIC)
+    const valeurTotaleADistribuer = data.souscription * data.moicCible;
+    const distributionsUtilisees = data.distributionsParAnnee.slice(0, data.dureeVieFonds).map(pct => (pct / 100) * valeurTotaleADistribuer);
 
     // Pour les tickets < 30k : calculer le capital total appelé selon les valeurs saisies
     let capitalAppelNormal: number[] = []; // Pour chaque année, le capital appelé cumulé normalement
@@ -332,13 +334,13 @@ export default function InvestmentSimulator() {
 
     // Calcul avec réinvestissement si activé
     if (data.reinvestirDistributions) {
-      // Calculer la somme des plus-values de réinvestissement
-      let sommePlusValues = 0;
-      
       // TRI selon le type de réinvestissement
       const triReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 0.15 : 
                           data.typeReinvestissement === 'GROWTH_CAPITAL' ? 0.133 :
                           data.typeReinvestissement === 'SECONDARY' ? 0.082 : 0.096;
+      
+      // Créer un tableau pour stocker les plus-values par année de sortie
+      const plusValuesParAnnee: number[] = Array(data.dureeVieFonds).fill(0);
       
       // Calculer la plus-value pour chaque distribution réinvestie
       years.forEach(year => {
@@ -352,9 +354,17 @@ export default function InvestmentSimulator() {
           
           // Plus-value = Valeur réinvestie - Distribution nette
           const plusValue = valeurFuture - distributionNette;
-          sommePlusValues += plusValue;
+          
+          // Calculer l'année de sortie du réinvestissement
+          const anneeSortie = Math.min(year.annee + anneesRestantes, data.dureeVieFonds);
+          
+          // Ajouter la plus-value à l'année de sortie correspondante
+          plusValuesParAnnee[anneeSortie - 1] += plusValue;
         }
       });
+      
+      // Calculer la somme totale des plus-values (pour les impôts)
+      const sommePlusValues = plusValuesParAnnee.reduce((sum, pv) => sum + pv, 0);
       
       // Calcul impôts avec réinvestissement
       let impotsTotauxReinvest = 0;
@@ -386,9 +396,9 @@ export default function InvestmentSimulator() {
         // Le flux net de base
         let fluxNet = year.fluxNet;
         
-        // Ajouter la plus-value du réinvestissement à la dernière année
-        if (index === years.length - 1) {
-          fluxNet += sommePlusValues;
+        // Ajouter la plus-value de réinvestissement pour l'année correspondante
+        if (plusValuesParAnnee[index] > 0) {
+          fluxNet += plusValuesParAnnee[index];
         }
         
         return fluxNet;
@@ -650,8 +660,22 @@ export default function InvestmentSimulator() {
                   <div className="space-y-2 border-t pt-4">
                     <Label>Distributions par année (%)</Label>
                     <p className="text-xs text-muted-foreground">
-                      Pourcentage de la souscription ({data.souscription.toLocaleString('fr-FR')}€)
+                      Pourcentage de (Souscription × MOIC) = {(data.souscription * data.moicCible).toLocaleString('fr-FR')}€
                     </p>
+                    {(() => {
+                      const totalDistributionsPct = data.distributionsParAnnee.reduce((sum, pct) => sum + pct, 0);
+                      const pourcentageRestant = 100 - totalDistributionsPct;
+                      const isOverLimit = totalDistributionsPct > 100;
+                      
+                      return (
+                        <div className={`text-xs font-medium mb-2 ${isOverLimit ? 'text-red-500' : pourcentageRestant <= 0 ? 'text-green-500' : 'text-amber-500'}`}>
+                          Total: {totalDistributionsPct.toFixed(1)}% / 100%
+                          {isOverLimit && ' - ⚠️ Dépassement !'}
+                          {!isOverLimit && pourcentageRestant > 0 && ` - Restant: ${pourcentageRestant.toFixed(1)}%`}
+                          {!isOverLimit && pourcentageRestant <= 0 && ' - ✓ Complet'}
+                        </div>
+                      );
+                    })()}
                     <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
                       {Array.from({ length: data.dureeVieFonds }).map((_, index) => (
                         <div key={index} className="flex items-center gap-2">
@@ -660,6 +684,7 @@ export default function InvestmentSimulator() {
                             <Input
                               type="number"
                               min="0"
+                              max="100"
                               step="0.1"
                               value={data.distributionsParAnnee[index] || 0}
                               onChange={(e) => handleDistributionChange(index, Number(e.target.value))}
@@ -1241,7 +1266,7 @@ export default function InvestmentSimulator() {
                                   </span>
                                 </td>
                               )}
-                           {data.reinvestirDistributions && (
+                            {data.reinvestirDistributions && (
                              <>
                                <td className="text-right p-2 bg-primary/5 text-purple-400">
                                  {distributionNette > 0 ? `${Math.round(distributionNette).toLocaleString('fr-FR')} €` : '-'}
@@ -1250,12 +1275,60 @@ export default function InvestmentSimulator() {
                                  {valeurReinvestie > 0 ? `${Math.round(valeurReinvestie).toLocaleString('fr-FR')} €` : '-'}
                                </td>
                                <td className="text-right p-2 bg-primary/10 text-green-400 font-medium">
-                                 {valeurReinvestie > 0 ? `+${Math.round(valeurReinvestie - distributionNette).toLocaleString('fr-FR')} €` : '-'}
+                                 {(() => {
+                                   // Calculer la plus-value qui sortira cette année
+                                   // (pas toute la plus-value future, seulement celle qui arrive à maturité cette année)
+                                   const triReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 0.15 : 
+                                                       data.typeReinvestissement === 'GROWTH_CAPITAL' ? 0.133 :
+                                                       data.typeReinvestissement === 'SECONDARY' ? 0.082 : 0.096;
+                                   
+                                   let plusValueAnnee = 0;
+                                   
+                                   // Parcourir toutes les distributions précédentes pour voir si elles arrivent à maturité cette année
+                                   results.forEach((prevYear) => {
+                                     if (prevYear.annee <= year.annee) {
+                                       const distNette = prevYear.distribution - prevYear.distributionRecyclee;
+                                       if (distNette > 0) {
+                                         const anneesRestantes = data.dureeVieFonds - prevYear.annee;
+                                         const anneeSortie = Math.min(prevYear.annee + anneesRestantes, data.dureeVieFonds);
+                                         
+                                         // Si cette distribution sort cette année
+                                         if (anneeSortie === year.annee) {
+                                           const valFuture = distNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
+                                           plusValueAnnee += (valFuture - distNette);
+                                         }
+                                       }
+                                     }
+                                   });
+                                   
+                                   return plusValueAnnee > 0 ? `+${Math.round(plusValueAnnee).toLocaleString('fr-FR')} €` : '-';
+                                 })()}
                                </td>
                                <td className="text-right p-2 bg-primary/10 font-semibold">
                                  {(() => {
-                                   const plusValue = valeurReinvestie > 0 ? valeurReinvestie - distributionNette : 0;
-                                   const fluxNetAvecReinvest = year.capitalCall + year.distribution + plusValue;
+                                   // Calculer la plus-value qui sort cette année (pas la valeur future)
+                                   const triReinvest = data.typeReinvestissement === 'VENTURE_CAPITAL' ? 0.15 : 
+                                                       data.typeReinvestissement === 'GROWTH_CAPITAL' ? 0.133 :
+                                                       data.typeReinvestissement === 'SECONDARY' ? 0.082 : 0.096;
+                                   
+                                   let plusValueAnnee = 0;
+                                   
+                                   results.forEach((prevYear) => {
+                                     if (prevYear.annee <= year.annee) {
+                                       const distNette = prevYear.distribution - prevYear.distributionRecyclee;
+                                       if (distNette > 0) {
+                                         const anneesRestantes = data.dureeVieFonds - prevYear.annee;
+                                         const anneeSortie = Math.min(prevYear.annee + anneesRestantes, data.dureeVieFonds);
+                                         
+                                         if (anneeSortie === year.annee) {
+                                           const valFuture = distNette * Math.pow(1 + triReinvest, Math.max(0, anneesRestantes));
+                                           plusValueAnnee += (valFuture - distNette);
+                                         }
+                                       }
+                                     }
+                                   });
+                                   
+                                   const fluxNetAvecReinvest = year.capitalCall + year.distribution + plusValueAnnee;
                                    return (
                                      <span className={fluxNetAvecReinvest > 0 ? 'text-green-400' : fluxNetAvecReinvest < 0 ? 'text-red-400' : ''}>
                                        {Math.round(fluxNetAvecReinvest).toLocaleString('fr-FR')} €
