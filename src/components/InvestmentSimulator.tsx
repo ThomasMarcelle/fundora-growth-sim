@@ -1177,6 +1177,19 @@ export default function InvestmentSimulator() {
                                 </Tooltip>
                               </div>
                             </th>
+                            <th className="text-right p-2 bg-primary/10">
+                              <div className="flex items-center justify-end gap-1">
+                                Flux Nette
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Info className="w-3 h-3 text-muted-foreground hover:text-primary cursor-help" />
+                                  </TooltipTrigger>
+                                   <TooltipContent className="max-w-xs">
+                                     <p>Flux de trésorerie net avec réinvestissement : Capital Call + Distributions + Plus-value</p>
+                                   </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </th>
                           </>
                         )}
                       </tr>
@@ -1238,6 +1251,17 @@ export default function InvestmentSimulator() {
                                </td>
                                <td className="text-right p-2 bg-primary/10 text-green-400 font-medium">
                                  {valeurReinvestie > 0 ? `+${Math.round(valeurReinvestie - distributionNette).toLocaleString('fr-FR')} €` : '-'}
+                               </td>
+                               <td className="text-right p-2 bg-primary/10 font-semibold">
+                                 {(() => {
+                                   const plusValue = valeurReinvestie > 0 ? valeurReinvestie - distributionNette : 0;
+                                   const fluxNetAvecReinvest = year.capitalCall + year.distribution + plusValue;
+                                   return (
+                                     <span className={fluxNetAvecReinvest > 0 ? 'text-green-400' : fluxNetAvecReinvest < 0 ? 'text-red-400' : ''}>
+                                       {Math.round(fluxNetAvecReinvest).toLocaleString('fr-FR')} €
+                                     </span>
+                                   );
+                                 })()}
                                </td>
                              </>
                            )}
