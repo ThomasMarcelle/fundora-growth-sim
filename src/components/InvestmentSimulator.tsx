@@ -436,8 +436,9 @@ export default function InvestmentSimulator() {
           newCapitalCalls[0] = 100; // 100% en première année
           newData.capitalCallsParAnnee = newCapitalCalls;
         }
-        // Sinon, on garde les valeurs existantes
+        // Sinon, on garde les valeurs existantes (capital calls et distributions ne changent pas)
       }
+      // Si la souscription change mais reste >= 30 000€, on garde les capital calls et distributions inchangés
       
       return newData;
     });
