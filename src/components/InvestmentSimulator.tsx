@@ -820,6 +820,40 @@ export default function InvestmentSimulator() {
                 /* Scénario sans réinvestissement */
                 <div className="box">
                   <h3 className="text-lg font-semibold mb-4">Résultats</h3>
+                  
+                  {/* Nouveaux montants investis */}
+                  <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b">
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Montant total de votre souscription initiale au fonds.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold">
+                        {Math.round(data.souscription).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Montant investi total</p>
+                    </div>
+
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Montant investi après déduction des frais totaux de plateforme.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold">
+                        {Math.round(data.souscription - finalResults.fraisTotaux).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Montant investi net de frais</p>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-3 gap-4">
                     <div className="box relative">
                       <Tooltip>
@@ -958,6 +992,40 @@ export default function InvestmentSimulator() {
                     data.typeReinvestissement === 'GROWTH_CAPITAL' ? 'Growth' :
                     data.typeReinvestissement === 'SECONDARY' ? 'Secondaire' : 'LBO'
                   })</h3>
+                  
+                  {/* Nouveaux montants investis */}
+                  <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b">
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Montant total de votre souscription initiale au fonds.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold">
+                        {Math.round(data.souscription).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Montant investi total</p>
+                    </div>
+
+                    <div className="box relative">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-muted-foreground hover:text-primary cursor-help absolute top-2 right-2" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>Montant investi après déduction des frais totaux de plateforme.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="big-number text-xl font-bold">
+                        {Math.round(data.souscription - finalResults.fraisTotaux).toLocaleString('fr-FR')} €
+                      </div>
+                      <p className="text text-sm mt-1">Montant investi net de frais</p>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-3 gap-4">
                     <div className="box relative">
                       <Tooltip>
